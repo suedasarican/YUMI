@@ -1,0 +1,6 @@
+@EduKids.Backend_HostAddress = http://localhost:5063
+
+GET {{EduKids.Backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
