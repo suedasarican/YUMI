@@ -1,548 +1,551 @@
 import React, { useState, useEffect } from 'react';
 import {
-  User, ShoppingCart, BookOpen, CheckCircle, Plus,
-  BarChart3, Baby, LogOut, Trash2, X, ArrowLeft, AlertTriangle, LogIn,
-  Search, Filter, LayoutDashboard, DollarSign, Package, Users, Image as ImageIcon, Database
+    ShoppingCart, Plus, LogOut, X, Trash2,
+    Filter, LayoutDashboard, Star, Menu, CheckCircle2, ChevronDown, BookOpen,
+    ArrowRight, ShieldCheck, Heart, Sparkles, User, Briefcase, Rocket, TrendingUp,
+    ChevronLeft, ChevronRight, Lock, Eye
 } from 'lucide-react';
+
+// --- DIŞARI AKTARILAN PANELLER ---
+import ExpertDashboard from './ExpertDashboard';
+import AdminPanel from './AdminPanel';
 
 // --- CONFIG ---
 const API_BASE = "http://localhost:5063/api";
 
-// --- TYPES ---
-type UserRole = 'Admin' | 'Expert' | 'Parent';
-interface UserType { id: number; name: string; email: string; role: number; }
-interface Product {
-  id: number;
-  name: string;
-  category: number; // 0: Bilişsel, 1: Dil, 2: Motor, 3: Zeka
-  ageGroup: number; // 0: 0-3, 1: 3-6, 2: 6-12
-  price: number;
-  description: string;
-  stock: number;
-  imageUrl?: string;
-}
-interface ChildProfile { id: number; parentId: number; name: string; age: number; interests: string; }
-interface GameGuide { id: number; productId: number; expertId: number; content: string; productName?: string; }
+// --- RENKLER ---
+// Mor: #A49EC2, Sarı: #F7DCA1, Arka Plan: #F7E9CE, Mavi: #75AFBC, Pembe: #FABDAD
 
-// --- HELPERS & CONSTANTS ---
-const CATEGORIES = ["Bilişsel", "Dil", "Motor", "Zeka"];
+// --- TİPLER ---
+type UserRole = 0 | 1 | 2; // 0: Admin, 1: Uzman, 2: Ebeveyn
+
+interface UserType { id: number; name: string; email: string; role: UserRole; isActive: boolean; }
+interface Product { id: number; name: string; category: number; ageGroup: number; price: number; description: string; stock: number; imageUrl?: string; isExpertApproved?: boolean; }
+interface ChildProfile { id: number; parentId: number; name: string; age: number; interests: string; }
+
+// --- SABİTLER ---
+const CATEGORIES = ["Motor Beceriler", "Dil Gelişimi", "Bilişsel Zeka", "Sosyal Duygusal"];
 const AGE_GROUPS = ["0-3 Yaş", "3-6 Yaş", "6-12 Yaş"];
 
-// --- MOCK DATA ---
+const getPlaceholderImage = (catId: number) => {
+    const images = [
+        "https://images.unsplash.com/photo-1596464716127-f9a8625579c3?w=500&q=80",
+        "https://images.unsplash.com/photo-1618842676088-7e43c69bc266?w=500&q=80",
+        "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=500&q=80",
+        "https://images.unsplash.com/photo-1515488042361-25f4682f0877?w=500&q=80"
+    ];
+    return images[catId % images.length] || images[0];
+};
+
+// --- MOCK VERİLER ---
 const MOCK_PRODUCTS: Product[] = [
-  { id: 1, name: "Montessori Şekil Seti", category: 2, ageGroup: 0, price: 450, stock: 15, description: "Ahşap geometrik şekillerle motor beceri geliştirme.", imageUrl: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&q=80&w=300" },
-  { id: 2, name: "Duygu Kartları", category: 1, ageGroup: 1, price: 120, stock: 50, description: "Çocukların duygularını ifade etmesini sağlayan 50 kart.", imageUrl: "https://images.unsplash.com/photo-1606092195730-5d7b9af1ef4d?auto=format&fit=crop&q=80&w=300" },
-  { id: 3, name: "Kodlama Robotu", category: 3, ageGroup: 2, price: 1250, stock: 5, description: "Temel algoritma mantığı öğreten programlanabilir robot.", imageUrl: "https://images.unsplash.com/photo-1535378437327-b71494669e9d?auto=format&fit=crop&q=80&w=300" },
-  { id: 4, name: "Ahşap Bloklar", category: 2, ageGroup: 1, price: 300, stock: 20, description: "Yaratıcılığı geliştiren doğal ahşap bloklar.", imageUrl: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=300" },
-  { id: 5, name: "İlk Kelimelerim Kitabı", category: 1, ageGroup: 0, price: 85, stock: 100, description: "Resimli sözlük ile dil gelişimi.", imageUrl: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300" },
-  { id: 6, name: "Zeka Küpü Seti", category: 3, ageGroup: 2, price: 150, stock: 30, description: "Problem çözme yeteneğini artıran zeka oyunları.", imageUrl: "https://images.unsplash.com/photo-1595758117029-943063f2780e?auto=format&fit=crop&q=80&w=300" },
-  { id: 7, name: "Sayı Eşleştirme Puzzle", category: 0, ageGroup: 1, price: 180, stock: 25, description: "Matematiğe ilk adım sayı eşleştirme.", imageUrl: "https://images.unsplash.com/photo-1583324621878-436336340317?auto=format&fit=crop&q=80&w=300" },
-  { id: 8, name: "Renkli Ksilofon", category: 0, ageGroup: 0, price: 220, stock: 12, description: "Müzik kulağını geliştiren eğitici çalgı.", imageUrl: "https://images.unsplash.com/photo-1576331189483-39446d32ce7d?auto=format&fit=crop&q=80&w=300" },
+    { id: 1, name: "Yumuşak Duyu Blokları", category: 0, ageGroup: 0, price: 450, description: "Bebeğinizin dokunma duyusunu geliştiren yumuşak ve renkli bloklar.", stock: 15, isExpertApproved: true, imageUrl: "https://images.unsplash.com/photo-1596464716127-f9a8625579c3?w=500&q=80" },
+    { id: 2, name: "Ahşap Şekil Eşleştirme", category: 2, ageGroup: 0, price: 320, description: "Problem çözme ve şekil tanıma yeteneklerini destekleyen klasik ahşap set.", stock: 12, isExpertApproved: true, imageUrl: "https://images.unsplash.com/photo-1618842676088-7e43c69bc266?w=500&q=80" },
+    { id: 3, name: "Konuşan Kelime Kartları", category: 1, ageGroup: 1, price: 850, description: "Sesli telaffuz özelliği ile kelime dağarcığını geliştiren interaktif set.", stock: 5, isExpertApproved: true, imageUrl: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=500&q=80" },
+    { id: 4, name: "Duygu Kartları", category: 3, ageGroup: 1, price: 120, description: "50 farklı duygu durumu kartı ile sosyal zekayı destekler.", stock: 50, isExpertApproved: false, imageUrl: "https://images.unsplash.com/photo-1515488042361-25f4682f0877?w=500&q=80" },
+    { id: 5, name: "Kodlama Robotu", category: 2, ageGroup: 2, price: 1250, description: "Algoritma mantığı öğreten sevimli robot arkadaş.", stock: 8, isExpertApproved: true, imageUrl: "https://images.unsplash.com/photo-1535378437327-b71494669e9d?w=500&q=80" },
+    { id: 6, name: "Gökkuşağı Denge Oyunu", category: 0, ageGroup: 1, price: 280, description: "El-göz koordinasyonu için eğlenceli denge oyunu.", stock: 20, isExpertApproved: false, imageUrl: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=500&q=80" },
 ];
+const MOCK_CHILDREN: ChildProfile[] = [{ id: 101, parentId: 1, name: "Can (Demo)", age: 4, interests: "Arabalar" }];
 
-const MOCK_CHILDREN: ChildProfile[] = [
-  { id: 101, parentId: 1, name: "Can (Demo)", age: 4, interests: "Arabalar" }
-];
+// --- YILDIZLI ARKA PLAN ---
+const StarBackground = () => (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <Star className="absolute top-10 left-10 text-orange-300 opacity-40" size={48} fill="currentColor" />
+        <Star className="absolute top-40 left-32 text-yumi-purple opacity-20" size={24} fill="currentColor" />
+        <Star className="absolute top-20 right-20 text-yumi-blue opacity-30" size={56} fill="currentColor" />
+        <Star className="absolute top-60 right-10 text-pink-300 opacity-40 animate-pulse" size={32} fill="currentColor" />
+        <Star className="absolute top-1/3 left-1/4 text-yumi-yellow opacity-60" size={20} fill="currentColor" />
+        <Star className="absolute bottom-1/3 right-1/4 text-yumi-purple opacity-20" size={40} fill="currentColor" />
+        <Star className="absolute bottom-20 left-20 text-yumi-blue opacity-30" size={36} fill="currentColor" />
+        <Star className="absolute bottom-40 right-32 text-orange-300 opacity-40" size={28} fill="currentColor" />
+    </div>
+);
 
-const MOCK_GUIDES: GameGuide[] = [
-  { id: 1, productId: 1, expertId: 11, content: "Bu set ile önce daireden başlayın...", productName: "Montessori Şekil Seti" }
-];
+// --- LOGIN SCREEN ---
+const LoginScreen = ({ onLogin, onAdminClick }: { onLogin: (user: UserType) => void, onAdminClick: () => void }) => {
+    const [activeTab, setActiveTab] = useState<'parent' | 'expert'>('parent');
+    const [loading, setLoading] = useState(false);
+    const [loginEmail, setLoginEmail] = useState("");
+    const [loginPass, setLoginPass] = useState("");
 
-// --- COMPONENTS ---
+    const performLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setTimeout(() => {
+            let role = activeTab === 'expert' ? 1 : 2;
+            // Admin girişi buradan değil, URL'den veya gizli butondan yapılır ama yine de bırakalım
+            if (loginEmail.includes('admin')) role = 0;
+            onLogin({ id: role === 1 ? 11 : 101, name: loginEmail.split('@')[0] || "Kullanıcı", email: loginEmail, role: role, isActive: true });
+            setLoading(false);
+        }, 800);
+    };
 
-const LoginScreen = ({ onLogin }: { onLogin: (user: UserType) => void }) => {
-  const [view, setView] = useState<'login' | 'register'>('login');
-  const [loading, setLoading] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPass, setLoginPass] = useState("");
-  const [regForm, setRegForm] = useState({ name: '', email: '', password: '' });
-
-  const performLogin = async (email: string, pass: string, isDemo: boolean = false) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/Auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pass })
-      });
-      if (res.ok) {
-        onLogin(await res.json());
-      } else {
-        if (confirm("Kullanıcı bulunamadı. " + (isDemo ? "Demo hesap oluşturulsun mu?" : "Demo modunda devam edilsin mi?"))) throw new Error("Demo");
-      }
-    } catch (error) {
-      console.warn(`Backend'e ulaşılamadı. Demo moduna geçiliyor.`);
-      let role = 2;
-      if (email.includes('admin')) role = 0;
-      if (email.includes('expert')) role = 1;
-      onLogin({ id: role === 0 ? 1 : role === 1 ? 11 : 101, name: isDemo ? `Demo Kullanıcı` : email.split('@')[0], email, role: role });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleManualLogin = (e: React.FormEvent) => { e.preventDefault(); performLogin(loginEmail, loginPass); };
-  const handleDemoLogin = (role: UserRole) => {
-    // E-Postalar güncellendi: @yumi.com
-    let email = role === 'Admin' ? "admin@yumi.com" : role === 'Expert' ? "expert@yumi.com" : "parent@yumi.com";
-    performLogin(email, "demo", true);
-  };
-
-  // --- YENİ EKLENEN: Veritabanına Admin/Uzman Ekleme Fonksiyonu ---
-  const handleCreateDefaultUsers = async () => {
-    setLoading(true);
-    try {
-      // Admin Ekle
-      await fetch(`${API_BASE}/Auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: "Sistem Yöneticisi", email: "admin@yumi.com", passwordHash: "demo", role: 0, isActive: true })
-      });
-
-      // Uzman Ekle
-      await fetch(`${API_BASE}/Auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: "Pedagog Zeynep", email: "expert@yumi.com", passwordHash: "demo", role: 1, isActive: true })
-      });
-
-      alert("✅ Başarılı! Admin ve Uzman hesapları veritabanına eklendi.\n\nAdmin: admin@yumi.com\nUzman: expert@yumi.com\nŞifreler: demo");
-    } catch (e) {
-      alert("❌ Hata: Backend sunucusuna ulaşılamadı veya hesaplar zaten var.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${API_BASE}/Auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: regForm.name, email: regForm.email, passwordHash: regForm.password, role: 2, isActive: true })
-      });
-      if (res.ok) { alert("Kayıt başarılı!"); setView('login'); setLoginEmail(regForm.email); setLoginPass(""); }
-      else { const err = await res.json(); alert("Hata: " + (err.message || "Kayıt yapılamadı.")); }
-    } catch (error) { alert("Backend bağlantı hatası!"); }
-  };
-
-  if (view === 'register') {
     return (
-      <div className="min-h-screen bg-orange-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border-t-8 border-blue-500 relative">
-          <button onClick={() => setView('login')} className="absolute top-4 left-4 text-gray-400"><ArrowLeft size={24} /></button>
-          <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">YUMİ Ailesine Katıl</h1>
-          <form onSubmit={handleRegister} className="space-y-4">
-            <input required placeholder="Ad Soyad" className="w-full border p-2 rounded" value={regForm.name} onChange={e => setRegForm({ ...regForm, name: e.target.value })} />
-            <input required type="email" placeholder="E-Posta" className="w-full border p-2 rounded" value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })} />
-            <input required type="password" placeholder="Şifre" className="w-full border p-2 rounded" value={regForm.password} onChange={e => setRegForm({ ...regForm, password: e.target.value })} />
-            <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Hesap Oluştur</button>
-          </form>
+        <div className="min-h-screen bg-[#F7E9CE] flex items-center justify-center p-4 relative">
+            <StarBackground />
+            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full text-center border border-gray-100 relative overflow-hidden z-10">
+                <div className="mb-6 flex flex-col items-center">
+                    <div className="bg-[#A49EC2] p-3 rounded-2xl mb-3 shadow-lg shadow-purple-200"><User size={40} className="text-white" /></div>
+                    <h1 className="text-3xl font-black text-gray-800 tracking-tight">YUMİ</h1>
+                    <p className="text-gray-400 text-sm font-medium">Gelişim Odaklı Çocuk Market</p>
+                </div>
+
+                <div className="flex bg-gray-100 p-1 rounded-xl mb-6 relative">
+                    <button onClick={() => setActiveTab('parent')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'parent' ? 'bg-white text-[#A49EC2] shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>
+                        <User size={16} /> Ebeveyn
+                    </button>
+                    <button onClick={() => setActiveTab('expert')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'expert' ? 'bg-white text-[#75AFBC] shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>
+                        <Briefcase size={16} /> Uzman
+                    </button>
+                </div>
+
+                <form onSubmit={performLogin} className="space-y-4 mb-6 text-left">
+                    <input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className={`w-full border border-gray-200 p-3 rounded-xl outline-none transition focus:ring-2 focus:ring-[#F7DCA1]`} placeholder={activeTab === 'expert' ? "uzman@sirket.com" : "anne@mail.com"} />
+                    <input required type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} className={`w-full border border-gray-200 p-3 rounded-xl outline-none transition focus:ring-2 focus:ring-[#F7DCA1]`} placeholder="******" />
+                    <button type="submit" disabled={loading} className={`w-full text-white py-3.5 rounded-xl font-bold transition hover:shadow-lg hover:scale-[1.02] active:scale-95 ${activeTab === 'expert' ? 'bg-[#75AFBC] hover:bg-[#6499A5] shadow-[#75AFBC]/30' : 'bg-[#A49EC2] hover:bg-[#938db0] shadow-[#A49EC2]/30'}`}>
+                        {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}
+                    </button>
+                </form>
+
+                {/* Gizli Admin Girişi Linki */}
+                <button onClick={onAdminClick} className="text-xs text-gray-300 hover:text-[#A49EC2] font-bold mt-4 uppercase tracking-widest transition">
+                    Yönetici Girişi
+                </button>
+            </div>
         </div>
-      </div>
     );
-  }
-
-  return (
-    <div className="min-h-screen bg-orange-50 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-8 border-orange-500">
-        <div className="mb-6 flex justify-center"><div className="bg-orange-100 p-4 rounded-full"><Baby size={48} className="text-orange-600" /></div></div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">YUMİ</h1>
-        <p className="text-gray-500 mb-6">Gelişim Odaklı Çocuk Market</p>
-        <form onSubmit={handleManualLogin} className="space-y-3 mb-6 text-left">
-          <div><label className="text-xs font-bold text-gray-500 ml-1">E-Posta</label><input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="w-full border p-2 rounded" placeholder="ornek@email.com" /></div>
-          <div><label className="text-xs font-bold text-gray-500 ml-1">Şifre</label><input required type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} className="w-full border p-2 rounded" placeholder="******" /></div>
-          <button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition">{loading ? "Giriş Yapılıyor..." : <><LogIn size={18} /> Giriş Yap</>}</button>
-        </form>
-        <div className="grid grid-cols-3 gap-2">
-          <button onClick={() => handleDemoLogin('Parent')} className="bg-blue-50 text-blue-600 py-2 rounded text-xs font-bold flex flex-col items-center"><User size={16} /> Ebeveyn</button>
-          <button onClick={() => handleDemoLogin('Expert')} className="bg-emerald-50 text-emerald-600 py-2 rounded text-xs font-bold flex flex-col items-center"><BookOpen size={16} /> Uzman</button>
-          <button onClick={() => handleDemoLogin('Admin')} className="bg-gray-100 text-gray-600 py-2 rounded text-xs font-bold flex flex-col items-center"><BarChart3 size={16} /> Yönetici</button>
-        </div>
-
-        {/* VERİTABANI OLUŞTURMA BUTONU */}
-        <button onClick={handleCreateDefaultUsers} className="mt-4 w-full bg-slate-800 text-white text-xs py-2 rounded flex items-center justify-center gap-2 hover:bg-slate-900">
-          <Database size={14} /> Admin & Uzman Hesaplarını Oluştur
-        </button>
-
-        <div className="mt-4 pt-4 border-t border-gray-100"><button onClick={() => setView('register')} className="text-orange-600 font-bold hover:underline">Hemen Kayıt Ol</button></div>
-      </div>
-    </div>
-  );
 };
 
-// --- MAIN APP ---
+// --- [YENİ] LANDING PAGE (VİTRİN + SLIDER) ---
+const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => void, products: Product[] }) => {
+    const showcaseProducts = products.slice(0, 3);
+    const [currentSlide, setCurrentSlide] = useState(0);
 
-export default function App() {
-  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCart] = useState<Product[]>([]);
-  const [showCart, setShowCart] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
+    const HERO_SLIDES = [
+        {
+            id: 1,
+            title: "Hayal Gücünün Sınırı Yok!",
+            subtitle: "YENİ SEZON",
+            desc: "YUMI ile çocuklarınızın gelişimine katkıda bulunurken pedagog onaylı güvenli eğlencenin tadını çıkarın.",
+            bgGradient: "from-[#FF9A9E] to-[#FECFEF]",
+            badgeColor: "text-yellow-300",
+            buttonColor: "text-[#A49EC2]",
+            image: "https://images.unsplash.com/photo-1596464716127-f9a8625579c3?w=600&q=80"
+        },
+        {
+            id: 2,
+            title: "Minik Eller Büyük İşler!",
+            subtitle: "MOTOR BECERİLER",
+            desc: "İnce motor becerilerini geliştiren özel setlerle çocuğunuzun el-göz koordinasyonunu destekleyin.",
+            bgGradient: "from-blue-200 to-cyan-100",
+            badgeColor: "text-blue-500",
+            buttonColor: "text-blue-500",
+            image: "https://images.unsplash.com/photo-1515488042361-25f4682f0877?w=600&q=80"
+        },
+        {
+            id: 3,
+            title: "Doğayı Keşfetme Zamanı",
+            subtitle: "BİLİM & DOĞA",
+            desc: "Meraklı kaşifler için hazırlanan doğa dostu oyuncaklarla dünyayı öğrenin.",
+            bgGradient: "from-green-200 to-emerald-100",
+            badgeColor: "text-green-600",
+            buttonColor: "text-green-600",
+            image: "https://images.unsplash.com/photo-1535378437327-b71494669e9d?w=600&q=80"
+        }
+    ];
 
-  useEffect(() => { fetchProducts(); }, []);
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide((prev) => (prev === HERO_SLIDES.length - 1 ? 0 : prev + 1));
+        }, 5000);
+        return () => clearInterval(timer);
+    }, [HERO_SLIDES.length]);
 
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/Public/products`);
-      if (res.ok) { setProducts(await res.json()); setIsOffline(false); }
-      else throw new Error("Hata");
-    } catch (err) {
-      console.warn("Backend yok. Demo veri.");
-      setProducts(MOCK_PRODUCTS); setIsOffline(true);
-    }
-  };
+    const nextSlide = () => setCurrentSlide((prev) => (prev === HERO_SLIDES.length - 1 ? 0 : prev + 1));
+    const prevSlide = () => setCurrentSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1));
 
-  const addToCart = (product: Product) => {
-    setCart([...cart, product]);
-    alert(`${product.name} sepete eklendi!`);
-  };
+    return (
+        <div className="flex flex-col gap-16 pb-16">
+            {/* HERO SLIDER */}
+            <div className={`relative z-10 bg-gradient-to-r ${HERO_SLIDES[currentSlide].bgGradient} rounded-[2.5rem] p-8 md:p-12 border border-white shadow-sm overflow-hidden transition-all duration-700 ease-in-out`}>
+                <div className="absolute top-0 right-0 w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
 
-  const removeFromCart = (index: number) => {
-    const newCart = [...cart];
-    newCart.splice(index, 1);
-    setCart(newCart);
-  };
+                <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 p-2 rounded-full text-white backdrop-blur-sm transition z-20"><ChevronLeft size={24} /></button>
+                <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 p-2 rounded-full text-white backdrop-blur-sm transition z-20"><ChevronRight size={24} /></button>
 
-  if (!currentUser) return <LoginScreen onLogin={setCurrentUser} />;
-  const getRoleName = (r: number) => r === 0 ? 'Admin' : r === 1 ? 'Uzman' : 'Ebeveyn';
-
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans relative">
-      {isOffline && <div className="bg-yellow-100 border-b border-yellow-200 text-yellow-800 px-4 py-2 text-sm font-bold flex items-center justify-center gap-2"><AlertTriangle size={16} /><span>Backend Bağlantısı Yok - Demo Modu</span></div>}
-
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2"><div className="bg-orange-500 p-2 rounded-lg text-white"><Baby size={20} /></div><span className="font-bold text-xl text-gray-800">YUMİ</span></div>
-          <div className="flex items-center gap-6">
-            {currentUser.role === 2 && (
-              <button onClick={() => setShowCart(true)} className="relative p-2 text-gray-600 hover:text-orange-600">
-                <ShoppingCart size={24} />
-                {cart.length > 0 && <span className="absolute top-0 right-0 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{cart.length}</span>}
-              </button>
-            )}
-            <div className="flex flex-col items-end mr-2">
-              <span className="text-sm font-bold text-gray-700">{currentUser.name}</span>
-              <span className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full uppercase font-bold">{getRoleName(currentUser.role)}</span>
-            </div>
-            <button onClick={() => setCurrentUser(null)} className="text-gray-400 hover:text-red-500"><LogOut size={20} /></button>
-          </div>
-        </div>
-      </nav>
-
-      {showCart && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex justify-end">
-          <div className="bg-white w-96 h-full shadow-2xl p-6 flex flex-col">
-            <div className="flex justify-between items-center mb-6 border-b pb-4"><h2 className="text-xl font-bold">Sepetim ({cart.length})</h2><button onClick={() => setShowCart(false)}><X /></button></div>
-            <div className="flex-1 overflow-auto space-y-4">
-              {cart.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded">
-                  <div><div className="font-bold text-sm">{item.name}</div><div className="text-xs text-gray-500">₺{item.price}</div></div>
-                  <button onClick={() => removeFromCart(idx)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16} /></button>
-                </div>
-              ))}
-            </div>
-            <div className="border-t pt-4 mt-4">
-              <div className="flex justify-between font-bold text-lg mb-4"><span>Toplam:</span><span>₺{cart.reduce((a, b) => a + b.price, 0)}</span></div>
-              <button className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600">Ödemeye Geç</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {currentUser.role === 0 && <AdminPanel products={products} refresh={fetchProducts} />}
-        {currentUser.role === 2 && <ParentPanel products={products} user={currentUser} onAddToCart={addToCart} />}
-        {currentUser.role === 1 && <ExpertPanel products={products} user={currentUser} />}
-      </main>
-    </div>
-  );
-}
-
-// --- SUB COMPONENTS ---
-
-const AdminPanel = ({ products, refresh }: { products: Product[], refresh: () => void }) => {
-  const [form, setForm] = useState({ name: '', price: '', stock: '10', imageUrl: '' });
-
-  const handleAdd = async () => {
-    try {
-      await fetch(`${API_BASE}/Admin/products`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name,
-          price: Number(form.price),
-          stock: Number(form.stock),
-          description: "Yeni ürün",
-          ageGroup: 1,
-          category: 0,
-          imageUrl: form.imageUrl
-        })
-      });
-      setForm({ name: '', price: '', stock: '10', imageUrl: '' });
-      refresh();
-    } catch (e) { alert("Bağlantı yok."); }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm("Silinsin mi?")) return;
-    try { await fetch(`${API_BASE}/Admin/products/${id}`, { method: 'DELETE' }); refresh(); }
-    catch (e) { alert("Bağlantı yok."); }
-  };
-
-  return (
-    <div className="space-y-8">
-      {/* 1. DASHBOARD İSTATİSTİKLERİ */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="bg-blue-100 p-3 rounded-full text-blue-600"><DollarSign /></div>
-          <div><p className="text-sm text-gray-500">Toplam Ciro</p><h3 className="text-2xl font-bold text-gray-800">₺48,250</h3></div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="bg-orange-100 p-3 rounded-full text-orange-600"><Package /></div>
-          <div><p className="text-sm text-gray-500">Toplam Sipariş</p><h3 className="text-2xl font-bold text-gray-800">142</h3></div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="bg-purple-100 p-3 rounded-full text-purple-600"><LayoutDashboard /></div>
-          <div><p className="text-sm text-gray-500">Aktif Ürünler</p><h3 className="text-2xl font-bold text-gray-800">{products.length}</h3></div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="bg-green-100 p-3 rounded-full text-green-600"><Users /></div>
-          <div><p className="text-sm text-gray-500">Kayıtlı Ebeveyn</p><h3 className="text-2xl font-bold text-gray-800">1,204</h3></div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 2. ÜRÜN EKLEME FORMU */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-          <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Plus className="text-orange-500" size={20} /> Yeni Ürün Ekle</h2>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-bold text-gray-500">Ürün Adı</label>
-              <input className="w-full border p-2 rounded" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs font-bold text-gray-500">Fiyat (₺)</label>
-                <input className="w-full border p-2 rounded" type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500">Stok</label>
-                <input className="w-full border p-2 rounded" type="number" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500">Görsel URL</label>
-              <div className="flex items-center gap-2">
-                <input className="w-full border p-2 rounded" placeholder="https://..." value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} />
-                <ImageIcon className="text-gray-400" size={20} />
-              </div>
-            </div>
-            <button onClick={handleAdd} className="w-full bg-gray-800 text-white py-2 rounded font-bold hover:bg-gray-900 mt-2">Ürünü Kaydet</button>
-          </div>
-        </div>
-
-        {/* 3. ÜRÜN LİSTESİ */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-          <div className="p-4 border-b bg-gray-50"><h3 className="font-bold text-gray-700">Ürün Envanteri</h3></div>
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-500"><tr><th className="p-4">Görsel</th><th className="p-4">Ad</th><th className="p-4">Stok</th><th className="p-4">Fiyat</th><th className="p-4">İşlem</th></tr></thead>
-            <tbody className="divide-y">
-              {products.map(p => (
-                <tr key={p.id}>
-                  <td className="p-4">
-                    <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
-                      {p.imageUrl ? <img src={p.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400"><Package size={16} /></div>}
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-12 min-h-[320px]">
+                    <div className="flex-1 space-y-6 animate-in slide-in-from-left duration-500" key={currentSlide}>
+                        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-white/40">
+                            <Rocket size={14} className={HERO_SLIDES[currentSlide].badgeColor} /> {HERO_SLIDES[currentSlide].subtitle}
+                        </div>
+                        <h1 className="text-4xl md:text-6xl font-black text-white leading-tight drop-shadow-sm">
+                            {HERO_SLIDES[currentSlide].title}
+                        </h1>
+                        <p className="text-lg text-white/90 leading-relaxed max-w-lg">
+                            {HERO_SLIDES[currentSlide].desc}
+                        </p>
+                        <div className="flex gap-4 pt-4">
+                            <button onClick={onStartShopping} className={`bg-white ${HERO_SLIDES[currentSlide].buttonColor} px-8 py-4 rounded-2xl font-bold text-lg hover:bg-opacity-90 transition shadow-lg shadow-black/10 flex items-center gap-2 transform hover:-translate-y-1`}>
+                                Alışverişe Başla <ArrowRight size={20} />
+                            </button>
+                        </div>
                     </div>
-                  </td>
-                  <td className="p-4 font-bold">{p.name}</td>
-                  <td className="p-4"><span className={`px-2 py-1 rounded-full text-xs font-bold ${p.stock < 10 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>{p.stock} Adet</span></td>
-                  <td className="p-4">₺{p.price}</td>
-                  <td className="p-4"><button onClick={() => handleDelete(p.id)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={16} /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ParentPanel = ({ products, user, onAddToCart }: any) => {
-  const [activeTab, setActiveTab] = useState<'shop' | 'kids'>('shop');
-  const [children, setChildren] = useState<ChildProfile[]>([]);
-  const [newChildName, setNewChildName] = useState("");
-
-  // FİLTRELEME STATE'LERİ
-  const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState<number | null>(null);
-  const [selectedAge, setSelectedAge] = useState<number | null>(null);
-
-  useEffect(() => { if (activeTab === 'kids') fetchChildren(); }, [activeTab]);
-
-  const fetchChildren = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/Parent/children/${user.id}`);
-      if (res.ok) setChildren(await res.json()); else setChildren(MOCK_CHILDREN);
-    } catch (e) { setChildren(MOCK_CHILDREN); }
-  };
-
-  const handleAddChild = async () => {
-    try {
-      await fetch(`${API_BASE}/Parent/children`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parentId: user.id, name: newChildName, age: 5, interests: "Oyun" }) });
-      setNewChildName(""); fetchChildren();
-    } catch (e) { alert("Backend yok."); }
-  };
-
-  const handleDeleteChild = (id: number) => {
-    if (confirm("Profil silinsin mi?")) setChildren(children.filter(c => c.id !== id));
-  };
-
-  // Ürünleri Filtrele
-  const filteredProducts = products.filter((p: Product) => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCat = selectedCat === null || p.category === selectedCat;
-    const matchesAge = selectedAge === null || p.ageGroup === selectedAge;
-    return matchesSearch && matchesCat && matchesAge;
-  });
-
-  return (
-    <div>
-      <div className="flex gap-4 mb-6 border-b">
-        <button onClick={() => setActiveTab('shop')} className={`pb-3 px-4 ${activeTab === 'shop' ? 'border-b-2 border-orange-500 text-orange-600 font-bold' : ''}`}>Mağaza</button>
-        <button onClick={() => setActiveTab('kids')} className={`pb-3 px-4 ${activeTab === 'kids' ? 'border-b-2 border-orange-500 text-orange-600 font-bold' : ''}`}>Çocuklarım</button>
-      </div>
-
-      {activeTab === 'shop' ? (
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* FİLTRELEME MENÜSÜ (SIDEBAR) */}
-          <div className="w-full md:w-64 shrink-0 space-y-6">
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                <input className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm" placeholder="Ürün ara..." value={search} onChange={e => setSearch(e.target.value)} />
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-bold text-gray-700 mb-2 text-sm flex items-center gap-2"><Filter size={14} /> Kategoriler</h3>
-                <div className="space-y-1">
-                  {["Tümü", "Bilişsel", "Dil", "Motor", "Zeka"].map((cat, idx) => (
-                    <button key={cat} onClick={() => setSelectedCat(idx === 0 ? null : idx - 1)}
-                      className={`w-full text-left px-3 py-1.5 rounded text-sm ${((selectedCat === null && idx === 0) || selectedCat === idx - 1) ? 'bg-orange-100 text-orange-700 font-bold' : 'hover:bg-gray-50 text-gray-600'}`}>
-                      {cat}
-                    </button>
-                  ))}
+                    <div className="flex-1 relative hidden md:block animate-in zoom-in duration-700" key={`img-${currentSlide}`}>
+                        <div className="absolute inset-0 bg-white/30 rounded-full blur-3xl transform scale-75"></div>
+                        <img src={HERO_SLIDES[currentSlide].image} alt="Slide" className="relative z-10 w-80 h-80 object-cover rounded-[2rem] shadow-2xl transform rotate-2 hover:rotate-0 transition duration-500 border-4 border-white/50 mx-auto" />
+                    </div>
                 </div>
-              </div>
 
-              <div>
-                <h3 className="font-bold text-gray-700 mb-2 text-sm flex items-center gap-2"><Baby size={14} /> Yaş Grubu</h3>
-                <div className="space-y-1">
-                  {["Tümü", "0-3 Yaş", "3-6 Yaş", "6-12 Yaş"].map((age, idx) => (
-                    <button key={age} onClick={() => setSelectedAge(idx === 0 ? null : idx - 1)}
-                      className={`w-full text-left px-3 py-1.5 rounded text-sm ${((selectedAge === null && idx === 0) || selectedAge === idx - 1) ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-gray-50 text-gray-600'}`}>
-                      {age}
-                    </button>
-                  ))}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                    {HERO_SLIDES.map((_, idx) => (
+                        <button key={idx} onClick={() => setCurrentSlide(idx)} className={`h-2 rounded-full transition-all duration-300 ${currentSlide === idx ? 'bg-white w-8' : 'bg-white/50 w-2 hover:bg-white/80'}`} />
+                    ))}
                 </div>
-              </div>
             </div>
-          </div>
 
-          {/* ÜRÜN LİSTESİ (GRID) */}
-          <div className="flex-1">
-            <div className="mb-4 text-sm text-gray-500 font-medium">{filteredProducts.length} ürün bulundu</div>
+            {/* Güven Sinyalleri */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {filteredProducts.map((product: any) => (
-                <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden hover:shadow-md transition">
-                  <div className="h-48 bg-gray-100 relative">
-                    {product.imageUrl ? <img src={product.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400"><Package size={32} /></div>}
-                    <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded text-xs font-bold text-gray-700 shadow-sm">{CATEGORIES[product.category]}</div>
-                  </div>
-                  <div className="p-4 flex flex-col flex-1">
-                    <h3 className="font-bold text-lg text-gray-800 mb-1">{product.name}</h3>
-                    <p className="text-xs text-blue-600 font-medium bg-blue-50 w-fit px-2 py-0.5 rounded mb-2">{AGE_GROUPS[product.ageGroup]}</p>
-                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">{product.description}</p>
-                    <div className="mt-auto flex justify-between items-center">
-                      <span className="font-bold text-xl text-gray-900">₺{product.price}</span>
-                      <button onClick={() => onAddToCart(product)} className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-orange-600 transition flex items-center gap-2">
-                        <ShoppingCart size={16} /> Ekle
-                      </button>
+                {[
+                    { icon: ShieldCheck, color: "text-[#75AFBC]", bg: "bg-[#75AFBC]/10", title: "Uzman Onaylı", desc: "Her ürün pedagoglarımız tarafından gelişim kriterlerine göre incelenir." },
+                    { icon: Heart, color: "text-[#FABDAD]", bg: "bg-[#FABDAD]/10", title: "Güvenli İçerik", desc: "Çocuk sağlığına zararlı hiçbir materyal içermeyen, sertifikalı ürünler." },
+                    { icon: BookOpen, color: "text-[#A49EC2]", bg: "bg-[#A49EC2]/10", title: "Gelişim Rehberi", desc: "Hangi oyuncağın hangi yaşta hangi beceriyi desteklediğini öğrenin." }
+                ].map((item, idx) => (
+                    <div key={idx} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center text-center hover:shadow-md transition duration-300">
+                        <div className={`${item.bg} ${item.color} w-16 h-16 rounded-2xl flex items-center justify-center mb-4`}>
+                            <item.icon size={32} />
+                        </div>
+                        <h3 className="font-bold text-gray-800 text-lg mb-2">{item.title}</h3>
+                        <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
                     </div>
-                  </div>
+                ))}
+            </div>
+
+            {/* Vitrin */}
+            <div>
+                <div className="flex justify-between items-end mb-8">
+                    <div>
+                        <h2 className="text-3xl font-bold text-gray-800">Çok Satanlar</h2>
+                        <p className="text-gray-500 mt-1">Annelerin en çok tercih ettiği gelişim setleri.</p>
+                    </div>
+                    <button onClick={onStartShopping} className="text-[#A49EC2] font-bold hover:underline flex items-center gap-1">Tümünü Gör <ArrowRight size={16} /></button>
                 </div>
-              ))}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {showcaseProducts.map(product => (
+                        <div key={product.id} className="bg-white rounded-[2rem] border border-gray-100 p-4 hover:shadow-xl transition duration-300 group cursor-pointer" onClick={onStartShopping}>
+                            <div className="h-64 relative rounded-2xl overflow-hidden bg-gray-50 mb-4">
+                                <img src={getPlaceholderImage(product.category)} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                                {product.isExpertApproved && (
+                                    <div className="absolute top-3 right-3 bg-[#F7DCA1] text-yellow-900 text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-md">
+                                        <CheckCircle2 size={12} fill="currentColor" className="text-white" /> Uzman Onaylı
+                                    </div>
+                                )}
+                            </div>
+                            <div className="px-2 pb-2">
+                                <h3 className="font-bold text-gray-800 text-lg mb-1">{product.name}</h3>
+                                <div className="text-[#75AFBC] font-black text-xl">₺{product.price}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-300">
-                <p className="text-gray-400">Aradığınız kriterlere uygun ürün bulunamadı.</p>
-              </div>
+        </div>
+    );
+};
+
+// --- [ESKİ] SHOP PAGE (ÜRÜN LİSTELEME) ---
+const ShopPage = ({ products, onAddToCartClick }: any) => {
+    return (
+        <div id="shop-top" className="flex flex-col lg:flex-row gap-8 items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* SIDEBAR (FİLTRELER) */}
+            <div className="w-full lg:w-72 shrink-0 bg-white/90 p-6 rounded-[2rem] shadow-sm border border-white sticky top-24">
+                <div className="flex items-center gap-2 mb-6 text-gray-800">
+                    <Filter size={20} className="text-yumi-blue" />
+                    <h3 className="font-bold text-lg">Filtreler</h3>
+                </div>
+                {/* Yaş Grubu */}
+                <div className="mb-8">
+                    <h4 className="font-bold text-gray-700 mb-3 text-sm">Yaş Grubu</h4>
+                    <div className="space-y-2">
+                        {AGE_GROUPS.map((age, i) => (
+                            <label key={i} className="flex items-center gap-3 cursor-pointer group">
+                                <div className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center group-hover:border-[#75AFBC] transition bg-white">
+                                    <input type="checkbox" className="hidden peer" />
+                                    <CheckCircle2 size={14} className="text-white opacity-0 peer-checked:opacity-100 bg-[#75AFBC] rounded-sm w-full h-full p-0.5 transition-all" />
+                                </div>
+                                <span className="text-gray-600 text-sm group-hover:text-[#75AFBC] transition font-medium">{age}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+                {/* Gelişim Alanı */}
+                <div>
+                    <h4 className="font-bold text-gray-700 mb-3 text-sm">Gelişim Alanı</h4>
+                    <div className="space-y-2">
+                        {CATEGORIES.map((cat, i) => (
+                            <label key={i} className="flex items-center gap-3 cursor-pointer group">
+                                <div className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center group-hover:border-[#A49EC2] transition bg-white">
+                                    <input type="checkbox" className="hidden peer" />
+                                    <CheckCircle2 size={14} className="text-white opacity-0 peer-checked:opacity-100 bg-[#A49EC2] rounded-sm w-full h-full p-0.5 transition-all" />
+                                </div>
+                                <span className="text-gray-600 text-sm group-hover:text-[#A49EC2] transition font-medium">{cat}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* MAIN CONTENT (ÜRÜNLER) */}
+            <div className="flex-1">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 bg-white/80 p-4 rounded-2xl border border-white shadow-sm">
+                    <div>
+                        <h1 className="text-2xl font-black text-gray-800">Tüm Ürünler</h1>
+                        <p className="text-gray-500 text-sm font-medium">{products.length} ürün listeleniyor</p>
+                    </div>
+                    <button className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition shadow-sm">
+                        Önerilen Sıralama <ChevronDown size={16} />
+                    </button>
+                </div>
+
+                {/* Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {products.map((product: Product) => (
+                        <div key={product.id} className="bg-white rounded-[2rem] border border-white p-4 hover:shadow-xl hover:shadow-purple-100 transition duration-500 group flex flex-col h-full relative">
+                            <div className="h-56 relative rounded-2xl overflow-hidden bg-gray-50 mb-4">
+                                <img src={getPlaceholderImage(product.category)} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                                {product.isExpertApproved && (
+                                    <div className="absolute top-3 right-3 bg-[#F7DCA1] text-yellow-900 text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-md transform group-hover:scale-105 transition">
+                                        <CheckCircle2 size={12} fill="currentColor" className="text-white" />
+                                        Uzman Onaylı
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 flex flex-col px-1">
+                                <div className="flex gap-2 mb-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#A49EC2] bg-purple-50 px-2 py-1 rounded-md border border-purple-100">
+                                        {CATEGORIES[product.category]}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                                        {AGE_GROUPS[product.ageGroup]}
+                                    </span>
+                                </div>
+                                <h3 className="font-bold text-gray-800 text-lg mb-2 leading-tight group-hover:text-[#A49EC2] transition">{product.name}</h3>
+                                <p className="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed font-medium">{product.description}</p>
+                                <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50">
+                                    <span className="text-2xl font-black text-gray-800">
+                                        {product.price} <span className="text-sm font-bold text-gray-400">TL</span>
+                                    </span>
+                                    <button onClick={() => onAddToCartClick(product)} className="w-10 h-10 rounded-full bg-[#F7DCA1] text-yellow-900 flex items-center justify-center hover:bg-[#A49EC2] hover:text-white transition shadow-md hover:scale-110 active:scale-95">
+                                        <Plus size={24} strokeWidth={3} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- EBEVEYN PANELİ ---
+const ParentPanel = ({ products, user, onAddToCart }: any) => {
+    const [activeTab, setActiveTab] = useState<'home' | 'shop' | 'kids'>('home');
+    const [children, setChildren] = useState<ChildProfile[]>(MOCK_CHILDREN);
+    const [newChildName, setNewChildName] = useState("");
+
+    const handleAddChild = () => {
+        setChildren([...children, { id: Date.now(), parentId: user.id, name: newChildName, age: 3, interests: "Oyun" }]);
+        setNewChildName("");
+    };
+
+    const handleGoToShop = () => {
+        setActiveTab('shop');
+        setTimeout(() => {
+            document.getElementById('shop-top')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    };
+
+    return (
+        <div>
+            <div className="flex justify-center mb-8 sticky top-24 z-20">
+                <div className="bg-white/90 backdrop-blur p-1.5 rounded-2xl shadow-sm border border-white inline-flex gap-2">
+                    <button onClick={() => setActiveTab('home')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'home' ? 'bg-[#F7DCA1] text-yellow-900 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <Star size={16} /> Vitrin
+                    </button>
+                    <button onClick={() => setActiveTab('shop')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'shop' ? 'bg-[#A49EC2] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <ShoppingCart size={16} /> Mağaza
+                    </button>
+                    <button onClick={() => setActiveTab('kids')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'kids' ? 'bg-[#75AFBC] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <User size={16} /> Çocuklarım
+                    </button>
+                </div>
+            </div>
+
+            {activeTab === 'home' && <LandingPage onStartShopping={handleGoToShop} products={products} />}
+            {activeTab === 'shop' && <ShopPage products={products} onAddToCartClick={onAddToCart} />}
+
+            {activeTab === 'kids' && (
+                <div className="space-y-6 pb-12">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-white flex gap-2 items-center">
+                        <input className="border-2 border-gray-100 p-3 rounded-xl outline-none focus:border-[#75AFBC]" placeholder="Çocuk Adı" value={newChildName} onChange={e => setNewChildName(e.target.value)} />
+                        <button onClick={handleAddChild} className="bg-[#75AFBC] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#6499A5] transition">Ekle</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {children.map(c => (
+                            <div key={c.id} className="bg-white p-5 rounded-3xl border border-white shadow-sm flex justify-between items-center hover:border-[#FABDAD] transition">
+                                <div className="flex items-center gap-4"><div className="bg-[#FABDAD] p-4 rounded-2xl text-white"><User size={24} /></div><div><h3 className="font-bold text-gray-800 text-lg">{c.name}</h3><p className="text-sm text-gray-500">{c.age} Yaşında</p></div></div>
+                                <button className="text-gray-300 hover:text-red-400 p-2"><Trash2 size={20} /></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             )}
-          </div>
         </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm flex gap-2 items-center">
-            <input className="border p-2 rounded" placeholder="Çocuk Adı" value={newChildName} onChange={e => setNewChildName(e.target.value)} />
-            <button onClick={handleAddChild} className="bg-blue-600 text-white px-4 py-2 rounded">Kaydet (Create)</button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {children.map(c => (
-              <div key={c.id} className="bg-white p-5 rounded-xl border flex justify-between items-center">
-                <div className="flex items-center gap-4"><div className="bg-blue-100 p-3 rounded-full text-blue-600"><Baby /></div><div><h3 className="font-bold">{c.name}</h3><p className="text-sm">{c.age} Yaşında</p></div></div>
-                <button onClick={() => handleDeleteChild(c.id)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={18} /></button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    );
 };
 
-// --- YENİ EKLENEN UZMAN PANELİ ---
-const ExpertPanel = ({ products, user }: { products: Product[], user: UserType }) => {
-  const [guides, setGuides] = useState<GameGuide[]>(MOCK_GUIDES);
-  const [content, setContent] = useState("");
-  const [selectedProd, setSelectedProd] = useState(0);
+// --- ANA APP ---
+export default function App() {
+    const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [cart, setCart] = useState<Product[]>([]);
+    const [showCart, setShowCart] = useState(false);
+    const [isAdminMode, setIsAdminMode] = useState(window.location.hash === '#admin');
 
-  const handleCreateGuide = async () => {
-    if (!selectedProd || !content) return alert("Lütfen ürün seçin ve içerik girin.");
-    try {
-      await fetch(`${API_BASE}/Expert/guides`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: selectedProd, expertId: user.id, content }) });
-      alert("Rehber yayınlandı!");
-    } catch (e) { console.warn("Backend yok, UI'da gösteriliyor."); }
-    const prodName = products.find(p => p.id === Number(selectedProd))?.name;
-    setGuides([...guides, { id: Date.now(), productId: Number(selectedProd), expertId: user.id, content, productName: prodName }]);
-    setContent("");
-  };
+    useEffect(() => {
+        const handleHash = () => setIsAdminMode(window.location.hash === '#admin');
+        window.addEventListener('hashchange', handleHash);
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><BookOpen className="text-emerald-500" size={20} /> Yeni Rehber Oluştur</h2>
-        <div className="space-y-3">
-          <select className="w-full border p-2 rounded" onChange={e => setSelectedProd(Number(e.target.value))}>
-            <option value={0}>Rehber yazılacak ürünü seçin...</option>
-            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <textarea className="w-full border p-2 rounded h-32 text-sm" placeholder="Pedagojik içerik..." value={content} onChange={e => setContent(e.target.value)}></textarea>
-          <button onClick={handleCreateGuide} className="w-full bg-emerald-500 text-white py-2 rounded font-medium hover:bg-emerald-600">Rehberi Yayınla</button>
+        const mockProducts = [
+            { id: 1, name: "Ahşap Şekil Seti", category: 2, ageGroup: 0, price: 450, stock: 15, description: "Motor becerileri geliştiren doğal ahşap set." },
+            { id: 2, name: "Duygu Kartları", category: 1, ageGroup: 1, price: 120, stock: 50, description: "50 farklı duygu durumu kartı." },
+        ];
+        setProducts(mockProducts);
+        return () => window.removeEventListener('hashchange', handleHash);
+    }, []);
+
+    const handleAddToCart = (product: Product) => {
+        setCart([...cart, product]);
+    };
+
+    const handleCheckout = () => {
+        if (!currentUser) {
+            setShowCart(false);
+            setShowAuthModal(true);
+        } else {
+            alert("Sipariş başarıyla oluşturuldu! 🎉");
+            setCart([]);
+            setShowCart(false);
+        }
+    };
+
+    const handleLogout = () => {
+        setCurrentUser(null);
+        if (isAdminMode) {
+            window.location.hash = ''; // Hash'i temizle
+            setIsAdminMode(false);
+        }
+    };
+
+    if (isAdminMode) {
+        return <AdminPanel products={products} setProducts={setProducts} onLogout={handleLogout} />;
+    }
+
+    // Kullanıcı girişi yoksa LoginScreen göster
+    if (!currentUser) {
+        return (
+            <LoginScreen
+                onLogin={setCurrentUser}
+                onGoAdmin={() => {
+                    window.location.hash = 'admin';
+                    setIsAdminMode(true);
+                }}
+            />
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-[#FFFDF7] font-sans text-gray-600 relative">
+            <StarBackground />
+
+            {/* NAVBAR */}
+            <nav className="bg-[#FFFDF7]/95 backdrop-blur-sm sticky top-0 z-30 border-b border-[#FFFDF7] shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
+                    <div className="flex items-center gap-3 cursor-pointer hover:scale-105 transition duration-300">
+                        <div className="bg-[#A49EC2] p-1.5 rounded-lg text-white"><User size={24} /></div>
+                        <span className="font-black text-3xl text-[#A49EC2] tracking-tighter hidden sm:block drop-shadow-sm">YUMI</span>
+                    </div>
+
+                    <div className="hidden md:flex items-center gap-8 font-bold text-[#75AFBC]">
+                        <a href="#" className="hover:text-[#A49EC2] transition">Hakkımızda</a>
+                        <a href="#" className="hover:text-[#A49EC2] transition">Blog</a>
+                        <a href="#" className="hover:text-[#A49EC2] transition">İletişim</a>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        {currentUser ? (
+                            <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border border-gray-100 shadow-sm">
+                                <div className="w-10 h-10 bg-[#FABDAD] rounded-full flex items-center justify-center text-xl text-white">👤</div>
+                                <div className="text-right hidden sm:block">
+                                    <p className="text-sm font-bold text-gray-800 leading-none">{currentUser.name}</p>
+                                    <p className="text-[10px] uppercase font-bold text-[#A49EC2] tracking-wide">{currentUser.role === 0 ? "Admin" : currentUser.role === 1 ? "Uzman" : "Ebeveyn"}</p>
+                                </div>
+                                <button onClick={handleLogout} className="ml-2 p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition" title="Çıkış"><LogOut size={18} /></button>
+                            </div>
+                        ) : (
+                            <button onClick={() => setShowAuthModal(true)} className="hidden sm:block text-sm font-bold text-[#75AFBC] hover:text-[#A49EC2] transition px-4 py-2 rounded-full hover:bg-white/50">Giriş Yap</button>
+                        )}
+
+                        <button onClick={() => setShowCart(true)} className="relative p-3 text-[#75AFBC] hover:text-[#A49EC2] transition bg-white/80 rounded-full shadow-sm hover:shadow-md border border-white">
+                            <ShoppingCart size={24} />
+                            {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-6 h-6 rounded-full flex items-center justify-center font-bold shadow-sm ring-2 ring-white animate-bounce">{cart.length}</span>}
+                        </button>
+
+                        <button className="md:hidden p-2 text-[#75AFBC]"><Menu size={28} /></button>
+                    </div>
+                </div>
+            </nav>
+
+            {/* MODALS */}
+            {showAuthModal && <AuthModal onLogin={setCurrentUser} onClose={() => setShowAuthModal(false)} />}
+
+            {/* SEPET MODAL */}
+            {showCart && (
+                <div className="fixed inset-0 z-50 flex justify-end backdrop-blur-sm bg-[#A49EC2]/10">
+                    <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right border-l-4 border-yumi-blue">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><ShoppingCart className="text-yumi-blue" /> Sepetim</h2>
+                            <button onClick={() => setShowCart(false)} className="hover:bg-red-50 text-gray-400 p-2 rounded-full transition"><X size={20} /></button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {cart.map((item, idx) => (
+                                <div key={idx} className="flex gap-4 items-center bg-white border border-yumi-skin p-3 rounded-2xl shadow-sm">
+                                    <img src={item.imageUrl || getPlaceholderImage(item.category)} className="w-16 h-16 rounded-xl object-cover" />
+                                    <div className="flex-1"><div className="font-bold text-gray-800">{item.name}</div><div className="text-yumi-blue font-bold">₺{item.price}</div></div>
+                                    <button onClick={() => { const n = [...cart]; n.splice(idx, 1); setCart(n); }} className="text-red-300 hover:text-red-500 p-2"><Trash2 size={18} /></button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-6 border-t border-yumi-skin bg-gray-50">
+                            <div className="flex justify-between font-bold text-xl mb-4 text-gray-800"><span>Toplam</span><span>₺{cart.reduce((a, b) => a + b.price, 0)}</span></div>
+                            <button className="w-full bg-yumi-blue text-white py-4 rounded-xl font-bold shadow-lg">Ödemeyi Tamamla</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* İÇERİK */}
+            <main className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+                {currentUser?.role === 1 ? (
+                    <ExpertDashboard products={products} user={currentUser} />
+                ) : (
+                    /* Ebeveyn veya Misafir (Landing/Shop) */
+                    <ParentPanel products={products} user={currentUser || { id: 0, name: 'Misafir', email: '', role: 2, isActive: true }} onAddToCart={handleAddToCart} />
+                )}
+            </main>
         </div>
-      </div>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="font-bold text-gray-800 mb-4">Yayınlanan Rehberler</h2>
-        <div className="space-y-4 max-h-96 overflow-auto">
-          {guides.map(g => (
-            <div key={g.id} className="p-3 bg-gray-50 rounded border border-gray-100">
-              <div className="flex justify-between items-start mb-1"><span className="text-xs font-bold text-emerald-700">{g.productName || "Ürün #" + g.productId}</span><span className="text-xs text-gray-400">Az önce</span></div>
-              <p className="text-sm text-gray-600">{g.content}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
+    );
+}
