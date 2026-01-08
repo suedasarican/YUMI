@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace EduKids.Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialSqlite : Migration
+    public partial class InitialSupabase : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -14,14 +15,14 @@ namespace EduKids.Backend.Migrations
                 name: "Products",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Stock = table.Column<int>(type: "INTEGER", nullable: false),
-                    AgeGroup = table.Column<int>(type: "INTEGER", nullable: false),
-                    Category = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Price = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    Stock = table.Column<int>(type: "integer", nullable: false),
+                    AgeGroup = table.Column<int>(type: "integer", nullable: false),
+                    Category = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -32,13 +33,13 @@ namespace EduKids.Backend.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Email = table.Column<string>(type: "TEXT", nullable: false),
-                    PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
-                    Role = table.Column<int>(type: "INTEGER", nullable: false),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -49,14 +50,14 @@ namespace EduKids.Backend.Migrations
                 name: "Comments",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    ProductId = table.Column<int>(type: "INTEGER", nullable: false),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Text = table.Column<string>(type: "TEXT", nullable: false),
-                    Rating = table.Column<int>(type: "INTEGER", nullable: false),
-                    ExpertReply = table.Column<string>(type: "TEXT", nullable: true),
-                    RepliedByExpertId = table.Column<int>(type: "INTEGER", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    Text = table.Column<string>(type: "text", nullable: false),
+                    Rating = table.Column<int>(type: "integer", nullable: false),
+                    ExpertReply = table.Column<string>(type: "text", nullable: true),
+                    RepliedByExpertId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -73,12 +74,12 @@ namespace EduKids.Backend.Migrations
                 name: "ChildProfiles",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    ParentId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Age = table.Column<int>(type: "INTEGER", nullable: false),
-                    Interests = table.Column<string>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ParentId = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Age = table.Column<int>(type: "integer", nullable: false),
+                    Interests = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -95,11 +96,11 @@ namespace EduKids.Backend.Migrations
                 name: "GameGuides",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    ProductId = table.Column<int>(type: "INTEGER", nullable: false),
-                    ExpertId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Content = table.Column<string>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    ExpertId = table.Column<int>(type: "integer", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -122,12 +123,12 @@ namespace EduKids.Backend.Migrations
                 name: "ProgressRecords",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    ChildId = table.Column<int>(type: "INTEGER", nullable: false),
-                    CompletedSetId = table.Column<int>(type: "INTEGER", nullable: false),
-                    BadgeEarned = table.Column<string>(type: "TEXT", nullable: false),
-                    ChildProfileId = table.Column<int>(type: "INTEGER", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ChildId = table.Column<int>(type: "integer", nullable: false),
+                    CompletedSetId = table.Column<int>(type: "integer", nullable: false),
+                    BadgeEarned = table.Column<string>(type: "text", nullable: false),
+                    ChildProfileId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {

@@ -1,1 +1,11 @@
-{"Version":1,"Hash":"fvv6P1QoB0qbLkUl1pag5hKhe6TnJZHH0EJ26buNBgY=","Source":"EduKids.Backend","BasePath":"_content/EduKids.Backend","Mode":"Default","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}
+{
+  "Version": 1,
+  "Hash": "Bo3Tgz5gZX2tZuzjqJ4mBJ6wBfUNfrIjeRUT5wZmKcY=",
+  "Source": "EduKids.Backend",
+  "BasePath": "_content/EduKids.Backend",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

@@ -645,6 +645,41 @@
           "lib/netstandard2.0/Mono.TextTemplating.dll": {}
         }
       },
+      "Npgsql/8.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Npgsql.EntityFrameworkCore.PostgreSQL/8.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "8.0.0",
+          "Microsoft.EntityFrameworkCore.Abstractions": "8.0.0",
+          "Microsoft.EntityFrameworkCore.Relational": "8.0.0",
+          "Npgsql": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "SQLitePCLRaw.bundle_e_sqlite3/2.1.6": {
         "type": "package",
         "dependencies": {
@@ -2355,6 +2390,44 @@
         "mono.texttemplating.nuspec"
       ]
     },
+    "Npgsql/8.0.0": {
+      "sha512": "Qiz74U+O7Mv4knrsXgKVYGJjgwoziK+aMFZqz7PtKR3vyGIhZA0tnW6HoUnL3X+YqtmVuhmoKkN8LDWEHMxPbw==",
+      "type": "package",
+      "path": "npgsql/8.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net6.0/Npgsql.dll",
+        "lib/net6.0/Npgsql.xml",
+        "lib/net7.0/Npgsql.dll",
+        "lib/net7.0/Npgsql.xml",
+        "lib/net8.0/Npgsql.dll",
+        "lib/net8.0/Npgsql.xml",
+        "lib/netstandard2.0/Npgsql.dll",
+        "lib/netstandard2.0/Npgsql.xml",
+        "lib/netstandard2.1/Npgsql.dll",
+        "lib/netstandard2.1/Npgsql.xml",
+        "npgsql.8.0.0.nupkg.sha512",
+        "npgsql.nuspec",
+        "postgresql.png"
+      ]
+    },
+    "Npgsql.EntityFrameworkCore.PostgreSQL/8.0.0": {
+      "sha512": "GDXiMS9peEdjSCU/rfgyHruio7q6tYuywGaktqEi6UPQ6ILechp3fVVX+dHXkIXt4nklCBzYVWkzFrSL9ubKUA==",
+      "type": "package",
+      "path": "npgsql.entityframeworkcore.postgresql/8.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll",
+        "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.xml",
+        "npgsql.entityframeworkcore.postgresql.8.0.0.nupkg.sha512",
+        "npgsql.entityframeworkcore.postgresql.nuspec",
+        "postgresql.png"
+      ]
+    },
     "SQLitePCLRaw.bundle_e_sqlite3/2.1.6": {
       "sha512": "BmAf6XWt4TqtowmiWe4/5rRot6GerAeklmOPfviOvwLoF5WwgxcJHAxZtySuyW9r9w+HLILnm8VfJFLCUJYW8A==",
       "type": "package",
@@ -2996,35 +3069,29 @@
       "Microsoft.EntityFrameworkCore.Design >= 8.0.0",
       "Microsoft.EntityFrameworkCore.Sqlite >= 8.0.0",
       "Microsoft.EntityFrameworkCore.Tools >= 8.0.0",
+      "Npgsql.EntityFrameworkCore.PostgreSQL >= 8.0.0",
       "Swashbuckle.AspNetCore >= 6.6.2"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\sueda\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "/Users/sevdegulsahin/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\sueda\\Desktop\\EduKids\\EduKids.Backend\\EduKids.Backend.csproj",
+      "projectUniqueName": "/Users/sevdegulsahin/Documents/GitHub/YUMI/EduKids.Backend/EduKids.Backend.csproj",
       "projectName": "EduKids.Backend",
-      "projectPath": "C:\\Users\\sueda\\Desktop\\EduKids\\EduKids.Backend\\EduKids.Backend.csproj",
-      "packagesPath": "C:\\Users\\sueda\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\sueda\\Desktop\\EduKids\\EduKids.Backend\\obj\\",
+      "projectPath": "/Users/sevdegulsahin/Documents/GitHub/YUMI/EduKids.Backend/EduKids.Backend.csproj",
+      "packagesPath": "/Users/sevdegulsahin/.nuget/packages/",
+      "outputPath": "/Users/sevdegulsahin/Documents/GitHub/YUMI/EduKids.Backend/obj/",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\sueda\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "/Users/sevdegulsahin/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -3042,8 +3109,7 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      },
-      "SdkAnalysisLevel": "9.0.300"
+      }
     },
     "frameworks": {
       "net8.0": {
@@ -3062,6 +3128,10 @@
           "Microsoft.EntityFrameworkCore.Tools": {
             "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
             "suppressParent": "All",
+            "target": "Package",
+            "version": "[8.0.0, )"
+          },
+          "Npgsql.EntityFrameworkCore.PostgreSQL": {
             "target": "Package",
             "version": "[8.0.0, )"
           },
@@ -3089,7 +3159,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.201/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

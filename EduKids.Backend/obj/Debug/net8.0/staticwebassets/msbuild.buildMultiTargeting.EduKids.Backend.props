@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="../build/EduKids.Backend.props" />
+</Project>
