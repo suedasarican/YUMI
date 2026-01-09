@@ -211,12 +211,6 @@ const LoginScreen = ({ onLogin, onAdminClick }: { onLogin: (user: UserType) => v
                         </div>
                     )}
                 </div>
-
-                {!isRegistering && activeTab === 'expert' && (
-                    <button onClick={onAdminClick} className="text-xs text-gray-300 hover:text-gray-500 font-bold mt-6 uppercase tracking-widest transition">
-                        Yönetici Girişi
-                    </button>
-                )}
             </div>
         </div>
     );
@@ -237,38 +231,38 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
 
     // SENİN SLIDER VERİLERİN (image kısımları sen değiştirene kadar placeholder olarak kalır)
     const HERO_SLIDES = [
-    { 
-        id: 1, 
-        title: "Hayal Gücünün Sınırı Yok!", 
-        subtitle: "YENİ SEZON", 
-        desc: "YUMI ile çocuklarınızın gelişimine katkıda bulunurken pedagog onaylı güvenli eğlencenin tadını çıkarın.", 
-        bgGradient: "from-[#FF9A9E] to-[#FECFEF]", 
-        badgeColor: "text-yellow-300", 
-        buttonColor: "text-[#A49EC2]", 
-        image: sliderResim1 
-    },
-    { 
-        id: 2, 
-        title: "Minik Eller Büyük İşler!", 
-        subtitle: "MOTOR BECERİLER", 
-        desc: "İnce motor becerilerini geliştiren özel setlerle çocuğunuzun el-göz koordinasyonunu destekleyin.", 
-        bgGradient: "from-blue-200 to-cyan-100", 
-        badgeColor: "text-blue-500", 
-        buttonColor: "text-blue-500", 
-        // Odaklanmış çocuk ve eğitici montessori materyalleri
-        image: sliderResim2
-    },
-    { 
-        id: 3, 
-        title: "Doğayı Keşfetme Zamanı", 
-        subtitle: "BİLİM & DOĞA", 
-        desc: "Meraklı kaşifler için hazırlanan doğa dostu oyuncaklarla dünyayı öğrenin.", 
-        bgGradient: "from-green-200 to-emerald-100", 
-        badgeColor: "text-green-600", 
-        buttonColor: "text-green-600", 
-        image: sliderResim3
-    }
-];
+        {
+            id: 1,
+            title: "Hayal Gücünün Sınırı Yok!",
+            subtitle: "YENİ SEZON",
+            desc: "YUMI ile çocuklarınızın gelişimine katkıda bulunurken pedagog onaylı güvenli eğlencenin tadını çıkarın.",
+            bgGradient: "from-[#FF9A9E] to-[#FECFEF]",
+            badgeColor: "text-yellow-300",
+            buttonColor: "text-[#A49EC2]",
+            image: sliderResim1
+        },
+        {
+            id: 2,
+            title: "Minik Eller Büyük İşler!",
+            subtitle: "MOTOR BECERİLER",
+            desc: "İnce motor becerilerini geliştiren özel setlerle çocuğunuzun el-göz koordinasyonunu destekleyin.",
+            bgGradient: "from-blue-200 to-cyan-100",
+            badgeColor: "text-blue-500",
+            buttonColor: "text-blue-500",
+            // Odaklanmış çocuk ve eğitici montessori materyalleri
+            image: sliderResim2
+        },
+        {
+            id: 3,
+            title: "Doğayı Keşfetme Zamanı",
+            subtitle: "BİLİM & DOĞA",
+            desc: "Meraklı kaşifler için hazırlanan doğa dostu oyuncaklarla dünyayı öğrenin.",
+            bgGradient: "from-green-200 to-emerald-100",
+            badgeColor: "text-green-600",
+            buttonColor: "text-green-600",
+            image: sliderResim3
+        }
+    ];
 
 
     // 2. VERİ ÇEKME
@@ -767,7 +761,7 @@ export default function App() {
                 <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
                     <div className="flex items-center gap-3 cursor-pointer">
                         {/* LOGO KULLANIMI: İkon ve Yazı yerine Resim */}
-<img src={logoParent} alt="YUMI Logo" className="h-20 w-auto object-contain" />
+                        <img src={logoParent} alt="YUMI Logo" className="h-20 w-auto object-contain" />
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border border-gray-100 shadow-sm">
