@@ -4,11 +4,11 @@ import {
     Filter, LayoutDashboard, Star, Menu, CheckCircle2, ChevronDown, BookOpen,
     ArrowRight, ShieldCheck, Heart, Sparkles, User, Briefcase, Rocket, TrendingUp,
     ChevronLeft, ChevronRight, Lock, Eye, Calendar, Stethoscope,
-    // --- EKSİK OLANLAR EKLENDİ ---
-    CalendarCheck, Search, Instagram, Twitter, Facebook, Clock, FileText, MessageCircle
+    CalendarCheck, Search, Instagram, Twitter, Facebook, Clock, FileText, MessageCircle,
+    Info // <--- BURAYA BUNU EKLE
 } from 'lucide-react';
-
-// --- DIŞARI AKTARILAN PANELLER ---
+import logoParent from './assets/logo.jpeg';
+import logoExpert from './assets/expert-logo.jpeg'; // Uzman için de aynısını koydum, farklıysa değiştir.
 import ExpertDashboard from './ExpertDashboard';
 import AdminPanel from './AdminPanel';
 
@@ -69,124 +69,188 @@ const StarBackground = () => (
     </div>
 );
 
-const LoginScreen = ({ onLogin, onAdminClick }: { onLogin: (user: UserType) => void, onAdminClick: () => void }) => {
-    // Sekmeler sadece görsel tercih için, backend zaten rolü biliyor
-    const [activeTab, setActiveTab] = useState<'parent' | 'expert'>('parent');
-    const [loading, setLoading] = useState(false);
-    const [loginEmail, setLoginEmail] = useState("");
-    const [loginPass, setLoginPass] = useState("");
 
-    const performLogin = async (e: React.FormEvent) => {
+// --- GÜNCELLENMİŞ LOGIN SCREEN (DOSYA IMPORTLU) ---
+const LoginScreen = ({ onLogin, onAdminClick }: { onLogin: (user: UserType) => void, onAdminClick: () => void }) => {
+
+    const [activeTab, setActiveTab] = useState<'parent' | 'expert'>('parent');
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    // Form Verileri
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+
+    const handleTabChange = (tab: 'parent' | 'expert') => {
+        setActiveTab(tab);
+        setIsRegistering(false);
+        setError("");
+        setEmail("");
+        setPassword("");
+        setName("");
+    };
+
+    const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError("");
 
         try {
-            // Admin girişi için özel kontrol (URL hash'i değiştirmek için)
-            if (loginEmail.includes('admin')) {
+            if (!isRegistering && email.includes('admin')) {
                 onAdminClick();
                 return;
             }
 
-            // --- BURASI DEĞİŞTİ: MOCK YERİNE FETCH KULLANIYORUZ ---
-            const response = await fetch(`${API_BASE}/auth/login`, {
+            const endpoint = isRegistering ? '/auth/register' : '/auth/login';
+
+            const payload = isRegistering
+                ? { name, email, passwordHash: password, role: 2, isActive: true }
+                : { email, password };
+
+            const response = await fetch(`${API_BASE}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: loginEmail,
-                    password: loginPass
-                })
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
-                const user = await response.json();
-                console.log("Giriş Başarılı:", user); // Konsoldan kontrol edebilirsin
-                onLogin(user); // Gerçek kullanıcıyı sisteme sok
+                const data = await response.json();
+                onLogin(data);
             } else {
-                alert("Giriş başarısız! E-posta veya şifreyi kontrol edin.");
+                setError(isRegistering ? "Kayıt yapılamadı." : "Giriş başarısız. Bilgilerinizi kontrol edin.");
             }
-            // -----------------------------------------------------
 
-        } catch (error) {
-            console.error("Login hatası:", error);
-            alert("Sunucuya bağlanılamadı. Backend'in çalıştığından emin olun.");
+        } catch (err) {
+            console.error(err);
+            setError("Sunucuya bağlanılamadı.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-[#F7E9CE] flex items-center justify-center p-4 relative">
+        <div className="min-h-screen bg-[#F7E9CE] flex items-center justify-center p-4 relative font-sans">
             <StarBackground />
-            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full text-center border border-gray-100 relative overflow-hidden z-10">
-                <div className="mb-6 flex flex-col items-center">
-                    <div className="bg-[#A49EC2] p-3 rounded-2xl mb-3 shadow-lg shadow-purple-200"><User size={40} className="text-white" /></div>
-                    <h1 className="text-3xl font-black text-gray-800 tracking-tight">YUMİ</h1>
-                    <p className="text-gray-400 text-sm font-medium">Gelişim Odaklı Çocuk Market</p>
+
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center border border-white/50 relative overflow-hidden z-10 animate-in fade-in zoom-in duration-300">
+
+                {/* --- LOGO ALANI (ARTIK IMPORT ETTİĞİN DOSYAYI KULLANIYOR) --- */}
+                <div className="mb-8 flex flex-col items-center">
+                    <div className="relative group">
+                        {/* Arkadaki parıltı efekti */}
+                        <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition duration-1000 ${activeTab === 'parent' ? 'bg-[#A49EC2]' : 'bg-[#75AFBC]'}`}></div>
+
+                        {/* Sekmeye göre logo değişiyor (logoParent veya logoExpert değişkeni) */}
+                        <img
+                            src={activeTab === 'parent' ? logoParent : logoExpert}
+                            alt="YUMI Logo"
+                            className="relative w-40 h-40 object-contain transition-all duration-500 transform hover:scale-105 drop-shadow-xl"
+                        />
+                    </div>
+
+                    <h1 className="text-4xl font-black text-gray-800 tracking-tighter mt-4">YUMİ</h1>
+                    <p className="text-gray-400 text-xs font-bold tracking-widest uppercase mt-1">
+                        {activeTab === 'parent' ? 'Gelişim Odaklı Çocuk Market' : 'Uzman Danışman Paneli'}
+                    </p>
                 </div>
 
-                <div className="flex bg-gray-100 p-1 rounded-xl mb-6 relative">
-                    <button onClick={() => setActiveTab('parent')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'parent' ? 'bg-white text-[#A49EC2] shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>
-                        <User size={16} /> Ebeveyn
+                {/* SEKME (TAB) BUTONLARI */}
+                <div className="flex bg-gray-50 p-1.5 rounded-2xl mb-8 relative border border-gray-100">
+                    <button
+                        onClick={() => handleTabChange('parent')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'parent' ? 'bg-white text-[#A49EC2] shadow-sm ring-1 ring-gray-100' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <User size={18} /> Ebeveyn
                     </button>
-                    <button onClick={() => setActiveTab('expert')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'expert' ? 'bg-white text-[#75AFBC] shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>
-                        <Briefcase size={16} /> Uzman
+                    <button
+                        onClick={() => handleTabChange('expert')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'expert' ? 'bg-white text-[#75AFBC] shadow-sm ring-1 ring-gray-100' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Briefcase size={18} /> Uzman
                     </button>
                 </div>
 
-                <form onSubmit={performLogin} className="space-y-4 mb-6 text-left">
-                    <input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className={`w-full border border-gray-200 p-3 rounded-xl outline-none transition focus:ring-2 focus:ring-[#F7DCA1]`} placeholder="E-posta" />
-                    <input required type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} className={`w-full border border-gray-200 p-3 rounded-xl outline-none transition focus:ring-2 focus:ring-[#F7DCA1]`} placeholder="Şifre" />
-                    <button type="submit" disabled={loading} className={`w-full text-white py-3.5 rounded-xl font-bold transition hover:shadow-lg hover:scale-[1.02] active:scale-95 ${activeTab === 'expert' ? 'bg-[#75AFBC] hover:bg-[#6499A5] shadow-[#75AFBC]/30' : 'bg-[#A49EC2] hover:bg-[#938db0] shadow-[#A49EC2]/30'}`}>
-                        {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}
+                {/* FORM */}
+                <form onSubmit={handleAuth} className="space-y-4 mb-6 text-left">
+
+                    {isRegistering && activeTab === 'parent' && (
+                        <div className="animate-in slide-in-from-top-2">
+                            <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-gray-50 border border-gray-200 p-4 rounded-2xl outline-none transition focus:ring-2 focus:ring-[#FABDAD] focus:bg-white text-gray-700 font-bold placeholder:font-normal" placeholder="Adınız Soyadınız" />
+                        </div>
+                    )}
+
+                    <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-gray-50 border border-gray-200 p-4 rounded-2xl outline-none transition focus:ring-2 focus:ring-[#F7DCA1] focus:bg-white text-gray-700 font-bold placeholder:font-normal" placeholder="E-posta Adresi" />
+
+                    <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-gray-50 border border-gray-200 p-4 rounded-2xl outline-none transition focus:ring-2 focus:ring-[#F7DCA1] focus:bg-white text-gray-700 font-bold placeholder:font-normal" placeholder="Şifre" />
+
+                    {error && <p className="text-red-500 text-sm font-bold ml-1 animate-pulse">{error}</p>}
+
+                    <button type="submit" disabled={loading} className={`w-full text-white py-4 rounded-2xl font-black text-lg transition hover:shadow-xl hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 mt-4 ${activeTab === 'expert' ? 'bg-[#75AFBC] hover:bg-[#6499A5] shadow-[#75AFBC]/30' : 'bg-[#A49EC2] hover:bg-[#938db0] shadow-[#A49EC2]/30'}`}>
+                        {loading ? "İşlem Yapılıyor..." : (isRegistering ? "Kayıt Ol" : "Giriş Yap")}
                     </button>
                 </form>
 
-                <div className="text-xs text-gray-400 mt-4">
-                    <p>Test Hesabın:</p>
-                    <p><strong>expert@yumi.com</strong> / <strong>demo</strong></p>
+                {/* ALT LİNKLER */}
+                <div className="text-sm font-medium text-gray-500">
+                    {activeTab === 'parent' ? (
+                        <>
+                            {isRegistering ? "Zaten hesabınız var mı? " : "Hesabınız yok mu? "}
+                            <button onClick={() => setIsRegistering(!isRegistering)} className="text-[#A49EC2] font-bold hover:underline ml-1">
+                                {isRegistering ? "Giriş Yap" : "Hemen Kayıt Ol"}
+                            </button>
+                        </>
+                    ) : (
+                        <div className="p-3 bg-blue-50 text-[#75AFBC] rounded-xl text-xs leading-relaxed flex items-start gap-2 text-left">
+                            <Info size={16} className="shrink-0 mt-0.5" />
+                            <span>Uzman hesapları sadece <strong>Yumi Yönetimi</strong> tarafından oluşturulabilir.</span>
+                        </div>
+                    )}
                 </div>
 
-                <button onClick={onAdminClick} className="text-xs text-gray-300 hover:text-[#A49EC2] font-bold mt-4 uppercase tracking-widest transition">
-                    Yönetici Girişi
-                </button>
+                {!isRegistering && activeTab === 'expert' && (
+                    <button onClick={onAdminClick} className="text-xs text-gray-300 hover:text-gray-500 font-bold mt-6 uppercase tracking-widest transition">
+                        Yönetici Girişi
+                    </button>
+                )}
             </div>
         </div>
     );
 };
-
 // --- LANDING PAGE ---
 // --- GÜNCELLENMİŞ LANDING PAGE (ESKİ TASARIM + YENİ BLOG) ---
+// --- GÜNCELLENMİŞ LANDING PAGE (LOGO STİLİ SLIDER İLE) ---
 const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => void, products: Product[] }) => {
     // 1. STATE VE TANIMLAR
     const showcaseProducts = products.slice(0, 3);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [blogs, setBlogs] = useState<any[]>([]);
-    const [selectedBlog, setSelectedBlog] = useState<any | null>(null); // Blog okuma modu için
+    const [selectedBlog, setSelectedBlog] = useState<any | null>(null);
 
-    // SENİN İSTEDİĞİN SLIDER VERİLERİ
+    // SENİN SLIDER VERİLERİN (image kısımları sen değiştirene kadar placeholder olarak kalır)
     const HERO_SLIDES = [
         { id: 1, title: "Hayal Gücünün Sınırı Yok!", subtitle: "YENİ SEZON", desc: "YUMI ile çocuklarınızın gelişimine katkıda bulunurken pedagog onaylı güvenli eğlencenin tadını çıkarın.", bgGradient: "from-[#FF9A9E] to-[#FECFEF]", badgeColor: "text-yellow-300", buttonColor: "text-[#A49EC2]", image: "https://images.unsplash.com/photo-1596464716127-f9a8625579c3?w=600&q=80" },
         { id: 2, title: "Minik Eller Büyük İşler!", subtitle: "MOTOR BECERİLER", desc: "İnce motor becerilerini geliştiren özel setlerle çocuğunuzun el-göz koordinasyonunu destekleyin.", bgGradient: "from-blue-200 to-cyan-100", badgeColor: "text-blue-500", buttonColor: "text-blue-500", image: "https://images.unsplash.com/photo-1515488042361-25f4682f0877?w=600&q=80" },
         { id: 3, title: "Doğayı Keşfetme Zamanı", subtitle: "BİLİM & DOĞA", desc: "Meraklı kaşifler için hazırlanan doğa dostu oyuncaklarla dünyayı öğrenin.", bgGradient: "from-green-200 to-emerald-100", badgeColor: "text-green-600", buttonColor: "text-green-600", image: "https://images.unsplash.com/photo-1535378437327-b71494669e9d?w=600&q=80" }
     ];
 
-    // 2. VERİ ÇEKME VE SLIDER MANTIĞI
+    // 2. VERİ ÇEKME
     useEffect(() => {
         fetch(`${API_BASE}/blog`)
             .then(res => res.json())
             .then(data => {
-                // Sadece 'published' olanları al
                 const publishedBlogs = data.filter((b: any) => b.status?.toLowerCase() === 'published');
                 setBlogs(publishedBlogs);
             })
             .catch(err => console.error("Bloglar çekilemedi", err));
     }, []);
 
-    // Otomatik Kaydırma (Opsiyonel: İstersen kaldırabilirsin)
+    // Otomatik Kaydırma
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev === HERO_SLIDES.length - 1 ? 0 : prev + 1));
-        }, 6000);
+        }, 5000);
         return () => clearInterval(timer);
     }, []);
 
@@ -196,7 +260,7 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
     return (
         <div className="flex flex-col gap-16 pb-16 relative">
 
-            {/* --- BÖLÜM 1: SENİN SLIDER TASARIMIN --- */}
+            {/* --- BÖLÜM 1: HERO SLIDER (GÜNCELLENDİ) --- */}
             <div className={`relative z-10 bg-gradient-to-r ${HERO_SLIDES[currentSlide].bgGradient} rounded-[2.5rem] p-8 md:p-12 border border-white shadow-sm overflow-hidden transition-all duration-700 ease-in-out group`}>
                 <div className="absolute top-0 right-0 w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
 
@@ -205,6 +269,8 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                 <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 p-2 rounded-full text-white backdrop-blur-sm transition z-20 opacity-0 group-hover:opacity-100"><ChevronRight size={24} /></button>
 
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-12 min-h-[320px]">
+
+                    {/* SOL METİN ALANI */}
                     <div className="flex-1 space-y-6 animate-in slide-in-from-left duration-500" key={currentSlide}>
                         <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-white/40">
                             <Rocket size={14} className={HERO_SLIDES[currentSlide].badgeColor} /> {HERO_SLIDES[currentSlide].subtitle}
@@ -217,11 +283,22 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                             </button>
                         </div>
                     </div>
-                    <div className="flex-1 relative hidden md:block animate-in zoom-in duration-700" key={`img-${currentSlide}`}>
+
+                    {/* --- GÜNCELLENEN KISIM: SAĞ GÖRSEL ALANI (LOGO STİLİ) --- */}
+                    {/* 'object-cover' yerine 'object-contain' yapıldı ve arka plan blur efekti eklendi */}
+                    <div className="flex-1 relative hidden md:flex items-center justify-center animate-in zoom-in duration-700" key={`img-${currentSlide}`}>
                         <div className="absolute inset-0 bg-white/30 rounded-full blur-3xl transform scale-75"></div>
-                        <img src={HERO_SLIDES[currentSlide].image} alt="Slide" className="relative z-10 w-80 h-80 object-cover rounded-[2rem] shadow-2xl transform rotate-2 hover:rotate-0 transition duration-500 border-4 border-white/50 mx-auto" />
+                        <img
+                            src={HERO_SLIDES[currentSlide].image}
+                            alt="Slide"
+                            className="relative z-10 w-80 h-80 object-contain rounded-[2rem] shadow-2xl transform rotate-2 hover:rotate-0 transition duration-500 border-4 border-white/50 mx-auto bg-white/10 backdrop-blur-sm p-6"
+                        />
                     </div>
+                    {/* -------------------------------------------------------- */}
+
                 </div>
+
+                {/* Slider Noktaları */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
                     {HERO_SLIDES.map((_, idx) => (
                         <button key={idx} onClick={() => setCurrentSlide(idx)} className={`h-2 rounded-full transition-all duration-300 ${currentSlide === idx ? 'bg-white w-8' : 'bg-white/50 w-2 hover:bg-white/80'}`} />
@@ -229,7 +306,7 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                 </div>
             </div>
 
-            {/* --- BÖLÜM 2: SENİN ÖZELLİK KARTLARIN --- */}
+            {/* --- BÖLÜM 2: ÖZELLİK KARTLARI --- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                     { icon: ShieldCheck, color: "text-[#75AFBC]", bg: "bg-[#75AFBC]/10", title: "Uzman Onaylı", desc: "Her ürün pedagoglarımız tarafından gelişim kriterlerine göre incelenir." },
@@ -244,7 +321,7 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                 ))}
             </div>
 
-            {/* --- BÖLÜM 3: ÇOK SATANLAR (SENİN KODUN) --- */}
+            {/* --- BÖLÜM 3: ÇOK SATANLAR --- */}
             <div>
                 <div className="flex justify-between items-end mb-8">
                     <div><h2 className="text-3xl font-bold text-gray-800">Çok Satanlar</h2><p className="text-gray-500 mt-1">Annelerin en çok tercih ettiği gelişim setleri.</p></div>
@@ -266,7 +343,7 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                 </div>
             </div>
 
-            {/* --- BÖLÜM 4: BLOG / UZMAN KÖŞESİ (YENİ EKLENTİ) --- */}
+            {/* --- BÖLÜM 4: BLOG / UZMAN KÖŞESİ --- */}
             <div className="animate-in slide-in-from-bottom-8 duration-700 pt-8 border-t border-gray-100">
                 <div className="flex justify-between items-end mb-8">
                     <div>
@@ -284,17 +361,9 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                         </div>
                     ) : (
                         blogs.slice(0, 3).map((blog) => (
-                            <div
-                                key={blog.id}
-                                onClick={() => setSelectedBlog(blog)}
-                                className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-2 transition duration-300 group cursor-pointer h-full flex flex-col"
-                            >
+                            <div key={blog.id} onClick={() => setSelectedBlog(blog)} className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-2 transition duration-300 group cursor-pointer h-full flex flex-col">
                                 <div className="h-48 overflow-hidden relative">
-                                    <img
-                                        src={blog.imageUrl || "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=500&q=80"}
-                                        alt={blog.title}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
-                                    />
+                                    <img src={blog.imageUrl || "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=500&q=80"} alt={blog.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
                                     <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-600 shadow-sm uppercase tracking-wider">
                                         {blog.category || "Gelişim"}
                                     </div>
@@ -309,12 +378,7 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                                         <div className="flex items-center gap-2">
                                             <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden border border-white shadow-sm">
-                                                {blog.author?.imageUrl ?
-                                                    <img src={blog.author.imageUrl} className="w-full h-full object-cover" /> :
-                                                    <div className="w-full h-full flex items-center justify-center bg-[#75AFBC] text-white font-bold text-xs">
-                                                        {blog.author?.name?.charAt(0) || "U"}
-                                                    </div>
-                                                }
+                                                {blog.author?.imageUrl ? <img src={blog.author.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-[#75AFBC] text-white font-bold text-xs">{blog.author?.name?.charAt(0) || "U"}</div>}
                                             </div>
                                             <span className="text-xs font-bold text-gray-600">{blog.author?.name || "Uzman"}</span>
                                         </div>
@@ -327,7 +391,7 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                 </div>
             </div>
 
-            {/* --- BÖLÜM 5: BLOG OKUMA MODALI (POP-UP) --- */}
+            {/* --- BÖLÜM 5: BLOG OKUMA MODALI --- */}
             {selectedBlog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setSelectedBlog(null)}></div>
