@@ -7,11 +7,14 @@ import {
     CalendarCheck, Search, Instagram, Twitter, Facebook, Clock, FileText, MessageCircle,
     Info // <--- BURAYA BUNU EKLE
 } from 'lucide-react';
-import logoParent from './assets/logo.jpeg';
-import logoExpert from './assets/expert-logo.jpeg'; // Uzman için de aynısını koydum, farklıysa değiştir.
+import logoParent from './assets/logo.png';
+import logoExpert from './assets/expert-logo.png'; // Uzman için de aynısını koydum, farklıysa değiştir.
 import ExpertDashboard from './ExpertDashboard';
 import AdminPanel from './AdminPanel';
 
+import sliderResim1 from './assets/p1.jpeg';
+import sliderResim2 from './assets/p2.jpeg';
+import sliderResim3 from './assets/p3.jpeg';
 // --- CONFIG ---
 const API_BASE = "http://localhost:5063/api";
 
@@ -136,22 +139,22 @@ const LoginScreen = ({ onLogin, onAdminClick }: { onLogin: (user: UserType) => v
 
             <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center border border-white/50 relative overflow-hidden z-10 animate-in fade-in zoom-in duration-300">
 
-                {/* --- LOGO ALANI (ARTIK IMPORT ETTİĞİN DOSYAYI KULLANIYOR) --- */}
+                {/* --- LOGO ALANI --- */}
                 <div className="mb-8 flex flex-col items-center">
                     <div className="relative group">
                         {/* Arkadaki parıltı efekti */}
-                        <div className={`absolute -inset-4 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition duration-1000 ${activeTab === 'parent' ? 'bg-[#A49EC2]' : 'bg-[#75AFBC]'}`}></div>
+                        <div className={`absolute -inset-6 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000 ${activeTab === 'parent' ? 'bg-[#A49EC2]' : 'bg-[#75AFBC]'}`}></div>
 
-                        {/* Sekmeye göre logo değişiyor (logoParent veya logoExpert değişkeni) */}
+                        {/* Logo boyutu w-64 h-64 olarak büyütüldü */}
                         <img
                             src={activeTab === 'parent' ? logoParent : logoExpert}
                             alt="YUMI Logo"
-                            className="relative w-40 h-40 object-contain transition-all duration-500 transform hover:scale-105 drop-shadow-xl"
+                            className="relative w-64 h-64 object-contain transition-all duration-500 transform hover:scale-105 drop-shadow-2xl"
                         />
                     </div>
 
-                    <h1 className="text-4xl font-black text-gray-800 tracking-tighter mt-4">YUMİ</h1>
-                    <p className="text-gray-400 text-xs font-bold tracking-widest uppercase mt-1">
+                    {/* YUMİ Yazısı Kaldırıldı, Alt slogan duruyor */}
+                    <p className="text-gray-400 text-xs font-bold tracking-widest uppercase mt-4">
                         {activeTab === 'parent' ? 'Gelişim Odaklı Çocuk Market' : 'Uzman Danışman Paneli'}
                     </p>
                 </div>
@@ -218,6 +221,10 @@ const LoginScreen = ({ onLogin, onAdminClick }: { onLogin: (user: UserType) => v
         </div>
     );
 };
+
+
+
+
 // --- LANDING PAGE ---
 // --- GÜNCELLENMİŞ LANDING PAGE (ESKİ TASARIM + YENİ BLOG) ---
 // --- GÜNCELLENMİŞ LANDING PAGE (LOGO STİLİ SLIDER İLE) ---
@@ -230,10 +237,39 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
 
     // SENİN SLIDER VERİLERİN (image kısımları sen değiştirene kadar placeholder olarak kalır)
     const HERO_SLIDES = [
-        { id: 1, title: "Hayal Gücünün Sınırı Yok!", subtitle: "YENİ SEZON", desc: "YUMI ile çocuklarınızın gelişimine katkıda bulunurken pedagog onaylı güvenli eğlencenin tadını çıkarın.", bgGradient: "from-[#FF9A9E] to-[#FECFEF]", badgeColor: "text-yellow-300", buttonColor: "text-[#A49EC2]", image: "https://images.unsplash.com/photo-1596464716127-f9a8625579c3?w=600&q=80" },
-        { id: 2, title: "Minik Eller Büyük İşler!", subtitle: "MOTOR BECERİLER", desc: "İnce motor becerilerini geliştiren özel setlerle çocuğunuzun el-göz koordinasyonunu destekleyin.", bgGradient: "from-blue-200 to-cyan-100", badgeColor: "text-blue-500", buttonColor: "text-blue-500", image: "https://images.unsplash.com/photo-1515488042361-25f4682f0877?w=600&q=80" },
-        { id: 3, title: "Doğayı Keşfetme Zamanı", subtitle: "BİLİM & DOĞA", desc: "Meraklı kaşifler için hazırlanan doğa dostu oyuncaklarla dünyayı öğrenin.", bgGradient: "from-green-200 to-emerald-100", badgeColor: "text-green-600", buttonColor: "text-green-600", image: "https://images.unsplash.com/photo-1535378437327-b71494669e9d?w=600&q=80" }
-    ];
+    { 
+        id: 1, 
+        title: "Hayal Gücünün Sınırı Yok!", 
+        subtitle: "YENİ SEZON", 
+        desc: "YUMI ile çocuklarınızın gelişimine katkıda bulunurken pedagog onaylı güvenli eğlencenin tadını çıkarın.", 
+        bgGradient: "from-[#FF9A9E] to-[#FECFEF]", 
+        badgeColor: "text-yellow-300", 
+        buttonColor: "text-[#A49EC2]", 
+        image: sliderResim1 
+    },
+    { 
+        id: 2, 
+        title: "Minik Eller Büyük İşler!", 
+        subtitle: "MOTOR BECERİLER", 
+        desc: "İnce motor becerilerini geliştiren özel setlerle çocuğunuzun el-göz koordinasyonunu destekleyin.", 
+        bgGradient: "from-blue-200 to-cyan-100", 
+        badgeColor: "text-blue-500", 
+        buttonColor: "text-blue-500", 
+        // Odaklanmış çocuk ve eğitici montessori materyalleri
+        image: sliderResim2
+    },
+    { 
+        id: 3, 
+        title: "Doğayı Keşfetme Zamanı", 
+        subtitle: "BİLİM & DOĞA", 
+        desc: "Meraklı kaşifler için hazırlanan doğa dostu oyuncaklarla dünyayı öğrenin.", 
+        bgGradient: "from-green-200 to-emerald-100", 
+        badgeColor: "text-green-600", 
+        buttonColor: "text-green-600", 
+        image: sliderResim3
+    }
+];
+
 
     // 2. VERİ ÇEKME
     useEffect(() => {
@@ -730,8 +766,8 @@ export default function App() {
             <nav className="bg-[#FFFDF7]/95 backdrop-blur-sm sticky top-0 z-30 border-b border-[#FFFDF7] shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
                     <div className="flex items-center gap-3 cursor-pointer">
-                        <div className="bg-[#A49EC2] p-1.5 rounded-lg text-white"><User size={24} /></div>
-                        <span className="font-black text-3xl text-[#A49EC2] tracking-tighter hidden sm:block">YUMI</span>
+                        {/* LOGO KULLANIMI: İkon ve Yazı yerine Resim */}
+<img src={logoParent} alt="YUMI Logo" className="h-20 w-auto object-contain" />
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border border-gray-100 shadow-sm">
@@ -759,7 +795,7 @@ export default function App() {
                         <div className="flex-1 overflow-y-auto p-6 space-y-4">
                             {cart.map((item, idx) => (
                                 <div key={idx} className="flex gap-4 items-center bg-white border border-yumi-skin p-3 rounded-2xl shadow-sm">
-                                    <div className="flex-1"><div className="font-bold text-gray-800">{item.name}</div><div className="text-yumi-blue font-bold">₺{item.price}</div></div>
+                                    <div clasliderssName="flex-1"><div className="font-bold text-gray-800">{item.name}</div><div className="text-yumi-blue font-bold">₺{item.price}</div></div>
                                     <button onClick={() => { const n = [...cart]; n.splice(idx, 1); setCart(n); }} className="text-red-300 hover:text-red-500 p-2"><Trash2 size={18} /></button>
                                 </div>
                             ))}
