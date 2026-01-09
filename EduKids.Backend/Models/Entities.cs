@@ -2,15 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace EduKids.Models
 {
-    // Enums for strict typing
-    public enum UserRole { Admin, Expert, Parent }
+    // --- ENUMLAR ---
+    public enum UserRole { Admin = 0, Expert = 1, Parent = 2 }
     public enum AgeGroup { Age_0_3, Age_3_6, Age_6_12 }
     public enum Category { Bilişsel, Dil, Motor, Zeka }
-    public enum SubscriptionType { Monthly, Quarterly, Yearly }
+    public enum AppointmentStatus { Pending, Approved, Rejected, Completed }
+    public enum BlogPostStatus { Draft, Published }
 
+    // --- KULLANICI (USER) ---
     public class User
     {
         [Key]
@@ -19,29 +22,50 @@ namespace EduKids.Models
         public string Email { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public UserRole Role { get; set; }
-        public bool IsActive { get; set; } = true; // For Expert approval logic
+        public bool IsActive { get; set; } = true;
 
-        // Navigation Properties
-        public ICollection<ChildProfile>? Children { get; set; }
-        public ICollection<GameGuide>? WrittenGuides { get; set; } // If Expert
+        // Uzmanlar için Yeni Alanlar
+        public string? Title { get; set; }
+        public string? Bio { get; set; }
+        public string? ImageUrl { get; set; }
+
+        // İlişkiler (Hem Eski Hem Yeni)
+        public ICollection<ChildProfile>? Children { get; set; } // ESKİ
+        public ICollection<GameGuide>? WrittenGuides { get; set; } // ESKİ (Expert ise)
+
+        // Yeni İlişkiler
+        [JsonIgnore]
+        public ICollection<Appointment>? AppointmentsAsExpert { get; set; }
+        [JsonIgnore]
+        public ICollection<Appointment>? AppointmentsAsParent { get; set; }
+        public ICollection<BlogPost>? BlogPosts { get; set; }
+        public ICollection<Message>? SentMessages { get; set; }
+        public ICollection<Message>? ReceivedMessages { get; set; }
     }
 
+    // --- ÜRÜN (PRODUCT) ---
     public class Product
     {
         [Key]
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
         public int Stock { get; set; }
+        public string? ImageUrl { get; set; }
+        public bool IsExpertApproved { get; set; } = false; // Yeni
 
         public AgeGroup AgeGroup { get; set; }
         public Category Category { get; set; }
 
-        public ICollection<GameGuide>? GameGuides { get; set; }
-        public ICollection<Comment>? Comments { get; set; }
+        // İlişkiler
+        public ICollection<GameGuide>? GameGuides { get; set; } // ESKİ
+        public ICollection<Comment>? Comments { get; set; } // ESKİ
     }
+
+    // --- ESKİ SINIFLAR (GERİ GETİRİLDİ) ---
 
     public class ChildProfile
     {
@@ -50,17 +74,16 @@ namespace EduKids.Models
 
         [ForeignKey("User")]
         public int ParentId { get; set; }
-        public User Parent { get; set; } = null!;
+        [JsonIgnore]
+        public User? Parent { get; set; }
 
         public string Name { get; set; } = string.Empty;
         public int Age { get; set; }
         public string Interests { get; set; } = string.Empty;
 
-        // İsim çakışmasını önlemek için 'ChildProgress' olarak güncellendi
         public ICollection<ChildProgress>? ProgressRecords { get; set; }
     }
 
-    // Yeni Eklenen Sınıf (İsim çakışmasını önlemek için ismi değiştirildi)
     public class ChildProgress
     {
         [Key]
@@ -69,7 +92,7 @@ namespace EduKids.Models
         [ForeignKey("ChildProfile")]
         public int ChildId { get; set; }
 
-        public int CompletedSetId { get; set; } // Tamamlanan ürün/set ID'si
+        public int CompletedSetId { get; set; }
         public string BadgeEarned { get; set; } = string.Empty;
     }
 
@@ -80,11 +103,13 @@ namespace EduKids.Models
 
         [ForeignKey("Product")]
         public int ProductId { get; set; }
-        public Product Product { get; set; } = null!;
+        [JsonIgnore]
+        public Product? Product { get; set; }
 
         [ForeignKey("User")]
         public int ExpertId { get; set; }
-        public User Expert { get; set; } = null!;
+        [JsonIgnore]
+        public User? Expert { get; set; }
 
         public string Content { get; set; } = string.Empty;
     }
@@ -101,5 +126,84 @@ namespace EduKids.Models
 
         public string? ExpertReply { get; set; }
         public int? RepliedByExpertId { get; set; }
+    }
+
+    // --- YENİ SINIFLAR (RANDEVU SİSTEMİ) ---
+
+    public class Appointment
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [ForeignKey("Expert")]
+        public int ExpertId { get; set; }
+        [JsonIgnore] // Döngüsel hatayı önlemek için
+        public User? Expert { get; set; }
+
+        [ForeignKey("Parent")]
+        public int ParentId { get; set; }
+        [JsonIgnore]
+        public User? Parent { get; set; }
+
+        public DateTime Date { get; set; }
+        public string Time { get; set; } = string.Empty;
+
+        public string ChildName { get; set; } = string.Empty;
+        public int ChildAge { get; set; }
+        public string Topic { get; set; } = string.Empty;
+
+        public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
+    }
+
+    public class ExpertAvailability
+    {
+        [Key]
+        public int Id { get; set; }
+        public int ExpertId { get; set; }
+        public DateTime AvailableDate { get; set; }
+        public string AvailableTime { get; set; } = string.Empty;
+    }
+
+    public class BlogPost
+    {
+        [Key]
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
+        public int Views { get; set; } = 0;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public BlogPostStatus Status { get; set; } = BlogPostStatus.Draft;
+
+        [ForeignKey("User")]
+        public int AuthorId { get; set; }
+        [JsonIgnore]
+        public User? Author { get; set; }
+    }
+
+    public class Message
+    {
+        [Key]
+        public int Id { get; set; }
+        public int SenderId { get; set; }
+        public int ReceiverId { get; set; }
+        public string Content { get; set; } = string.Empty;
+        public DateTime SentAt { get; set; } = DateTime.UtcNow;
+        public bool IsRead { get; set; } = false;
+    }
+
+    public class ExpertQuestion
+    {
+        [Key]
+        public int Id { get; set; }
+        public int ParentId { get; set; }
+        public string ParentName { get; set; } = string.Empty;
+        public string QuestionText { get; set; } = string.Empty;
+        public string? ProductName { get; set; }
+
+        public string? AnswerText { get; set; }
+        public int? AnsweredByExpertId { get; set; }
+        public DateTime AskedAt { get; set; } = DateTime.UtcNow;
     }
 }

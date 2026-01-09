@@ -1,47 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore; // Added for ToListAsync
+using Microsoft.EntityFrameworkCore;
 using EduKids.Data;
 using EduKids.Models;
 using System.Linq;
-using System.Threading.Tasks; // Added for Async
+using System.Threading.Tasks;
 
 namespace EduKids.Controllers
 {
-    // 0. AUTH CONTROLLER (NEW: Handles Login/Register)
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
-    {
-        private readonly AppDbContext _context;
-        public AuthController(AppDbContext context) { _context = context; }
+    // NOT: AuthController buradan kaldırıldı çünkü artık kendi dosyasında (AuthController.cs).
 
-        [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginDto loginReq)
-        {
-            // Simple logic for prototype: Find user by Email
-            var user = _context.Users.FirstOrDefault(u => u.Email == loginReq.Email);
-            if (user == null) return Unauthorized(new { message = "Kullanıcı bulunamadı." });
-
-            // In a real app, you would verify PasswordHash and return a JWT Token here.
-            return Ok(user);
-        }
-
-        [HttpPost("register")]
-        public IActionResult Register([FromBody] User user)
-        {
-            if (_context.Users.Any(u => u.Email == user.Email))
-                return BadRequest(new { message = "Bu email zaten kayıtlı." });
-
-            _context.Users.Add(user);
-            _context.SaveChanges();
-            return Ok(new { message = "Kayıt başarılı!" });
-        }
-    }
-
-    public class LoginDto { public string Email { get; set; } = ""; public string Password { get; set; } = ""; }
-
-    // 0.5 PUBLIC CONTROLLER (NEW: For fetching data without login)
+    // 0.5 PUBLIC CONTROLLER (Giriş yapmadan ürünleri çekmek için)
     [ApiController]
     [Route("api/[controller]")]
     public class PublicController : ControllerBase
@@ -59,7 +28,6 @@ namespace EduKids.Controllers
     // 1. ADMIN CONTROLLER
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize(Roles = "Admin")] // Commented out for easier testing without JWT
     public class AdminController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -140,3 +108,4 @@ namespace EduKids.Controllers
         }
     }
 }
+// Namespace burada kapanıyor. Eğer bu parantez eksikse veya bundan sonra başka bir } varsa hata alırsın.

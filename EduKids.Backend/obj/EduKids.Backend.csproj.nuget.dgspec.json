@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "/Users/sevdegulsahin/Documents/GitHub/YUMI/EduKids.Backend/EduKids.Backend.csproj": {}
+    "C:\\Users\\sueda\\github\\YUMI\\EduKids.Backend\\EduKids.Backend.csproj": {}
   },
   "projects": {
-    "/Users/sevdegulsahin/Documents/GitHub/YUMI/EduKids.Backend/EduKids.Backend.csproj": {
+    "C:\\Users\\sueda\\github\\YUMI\\EduKids.Backend\\EduKids.Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/sevdegulsahin/Documents/GitHub/YUMI/EduKids.Backend/EduKids.Backend.csproj",
+        "projectUniqueName": "C:\\Users\\sueda\\github\\YUMI\\EduKids.Backend\\EduKids.Backend.csproj",
         "projectName": "EduKids.Backend",
-        "projectPath": "/Users/sevdegulsahin/Documents/GitHub/YUMI/EduKids.Backend/EduKids.Backend.csproj",
-        "packagesPath": "/Users/sevdegulsahin/.nuget/packages/",
-        "outputPath": "/Users/sevdegulsahin/Documents/GitHub/YUMI/EduKids.Backend/obj/",
+        "projectPath": "C:\\Users\\sueda\\github\\YUMI\\EduKids.Backend\\EduKids.Backend.csproj",
+        "packagesPath": "C:\\Users\\sueda\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\sueda\\github\\YUMI\\EduKids.Backend\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/Users/sevdegulsahin/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\sueda\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -37,7 +43,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -87,7 +94,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.201/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -1,104 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Calendar, MessageCircle, CheckCircle, XCircle,
-    FileText, Star, Clock, Users, Bell, Search, LayoutDashboard, ChevronRight,
-    Plus, Trash2, X, Eye, Image as ImageIcon, Link as LinkIcon, Edit3, RotateCcw,
-    ChevronLeft, Save, Info, Tag, Layers
+    FileText, Clock, Plus, Trash2, X, Eye, Image as ImageIcon, Link as LinkIcon, Edit3, RotateCcw,
+    ChevronLeft, ChevronRight, Save, Info, Tag, Layers, Star, LayoutDashboard,
+    CalendarCheck, CheckCircle2 // <-- EKSİK OLANLAR BUNLARDI, EKLENDİ
 } from 'lucide-react';
 
-// --- RENK PALETİ ---
-// Lila (Primary): #A49EC2
-// Krem (Background): #F7E9CE
-// Altın (Accent): #F7DCA1
+const API_BASE = "http://localhost:5063/api";
 
 // --- TİPLER ---
 interface UserType { id: number; name: string; email: string; role: number; }
-interface Product {
-    id: number;
-    name: string;
-    price: number;
-    stock: number;
-    imageUrl?: string;
-    isApproved?: boolean;
-    description: string; // İnceleme için gerekli
-    category: number;
-    ageGroup: number;
-}
+interface Product { id: number; name: string; price: number; stock: number; imageUrl?: string; isExpertApproved?: boolean; description: string; category: number; ageGroup: number; }
+interface Appointment { id: number; parentId: number; parentName: string; date: string; time: string; topic: string; status: 'pending' | 'approved' | 'rejected'; }
+interface Question { id: number; parentId: number; parentName: string; text: string; productName?: string; answer?: string; date: string; }
+interface BlogPost { id: number; title: string; category: string; content: string; imageUrl: string; status: 'draft' | 'published'; views: number; date: string; relatedProductIds: number[]; }
+interface AvailableSlot { id: number; date: string; time: string; }
 
-interface Appointment {
-    id: number;
-    parentId: number;
-    parentName: string;
-    date: string;
-    time: string;
-    topic: string;
-    status: 'pending' | 'approved' | 'rejected';
-}
-
-interface Question {
-    id: number;
-    parentId: number;
-    parentName: string;
-    text: string;
-    productName?: string;
-    answer?: string;
-    date: string;
-}
-
-interface AvailableSlot {
-    id: number;
-    date: string;
-    time: string;
-}
-
-interface BlogPost {
-    id: number;
-    title: string;
-    category: string;
-    content: string;
-    imageUrl: string;
-    status: 'draft' | 'published';
-    views: number;
-    date: string;
-    relatedProductIds: number[];
-}
-
-// --- MOCK DATA ---
-const MOCK_APPOINTMENTS: Appointment[] = [
-    { id: 1, parentId: 101, parentName: "Ayşe Yılmaz", date: "2026-02-15", time: "14:00", topic: "2 yaşındaki oğlumun konuşma gecikmesi hakkında görüşmek istiyorum.", status: 'pending' },
-    { id: 2, parentId: 102, parentName: "Mehmet Demir", date: "2026-02-16", time: "10:30", topic: "Dikkat eksikliği için oyuncak önerisi.", status: 'approved' }
-];
-
-const MOCK_QUESTIONS: Question[] = [
-    { id: 1, parentId: 101, parentName: "Selin K.", text: "Bu oyuncak 18 aylık bebek için güvenli mi? Küçük parça riski var mı?", productName: "Ahşap Blok Seti", date: "2 saat önce" },
-    { id: 2, parentId: 103, parentName: "Burak Ö.", text: "Oğlum çok çabuk sıkılıyor, bu set ilgisini uzun süre çeker mi?", productName: "Kodlama Tırtılı", date: "1 gün önce" }
-];
-
-const MOCK_BLOG_POSTS: BlogPost[] = [
-    {
-        id: 1,
-        title: "Çocuklarda İnce Motor Becerileri Nasıl Gelişir?",
-        category: "Gelişim",
-        content: "İnce motor becerileri, küçük kas gruplarının kullanımıyla ilgilidir...",
-        imageUrl: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=300",
-        status: "published",
-        views: 1250,
-        date: "2026-01-10",
-        relatedProductIds: [1, 4]
-    },
-    {
-        id: 2,
-        title: "2 Yaş Sendromuyla Başa Çıkma Yolları",
-        category: "Psikoloji",
-        content: "Bu dönemde çocuklar bağımsızlıklarını ilan etmeye başlarlar...",
-        imageUrl: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300",
-        status: "draft",
-        views: 0,
-        date: "2026-02-01",
-        relatedProductIds: []
-    }
-];
-
+// --- SABİTLER ---
 const BLOG_CATEGORIES = ["Gelişim", "Psikoloji", "Beslenme", "Oyun", "Sağlık"];
 const TIME_SLOTS = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
 const CATEGORY_NAMES = ["Bilişsel", "Dil", "Motor", "Zeka"];
@@ -107,36 +25,47 @@ const AGE_GROUP_NAMES = ["0-3 Yaş", "3-6 Yaş", "6-12 Yaş"];
 const ExpertDashboard = ({ products, user }: { products: Product[], user: UserType }) => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'appointments' | 'questions' | 'approvals' | 'blog'>('dashboard');
 
-    // STATE'LER
-    const [appointments, setAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS);
-    const [questions, setQuestions] = useState<Question[]>(MOCK_QUESTIONS);
+    // --- STATE'LER (Veritabanından Dolacak) ---
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [questions, setQuestions] = useState<Question[]>([]);
+    const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+    const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+
+    // Ürünleri prop'tan alıyoruz ama yerel onay işlemleri için state'e atıyoruz
     const [localProducts, setLocalProducts] = useState<Product[]>(products);
+
+    // Form ve UI State'leri
     const [replyText, setReplyText] = useState("");
     const [activeQuestionId, setActiveQuestionId] = useState<number | null>(null);
-
-    // Takvim State
-    const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([
-        { id: 1, date: "2026-02-20", time: "09:00" },
-        { id: 2, date: "2026-02-20", time: "10:00" }
-    ]);
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<string>("");
     const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
-
-    // Blog State
-    const [blogPosts, setBlogPosts] = useState<BlogPost[]>(MOCK_BLOG_POSTS);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [postForm, setPostForm] = useState({
-        title: '',
-        category: 'Gelişim',
-        content: '',
-        imageUrl: '',
-        relatedProductIds: [] as number[]
-    });
-
-    // YENİ: Ürün İnceleme State'i
+    const [postForm, setPostForm] = useState({ title: '', category: 'Gelişim', content: '', imageUrl: '', relatedProductIds: [] as number[] });
     const [inspectingProduct, setInspectingProduct] = useState<Product | null>(null);
+
+    // --- API VERİ ÇEKME ---
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // 1. Randevuları Çek (Yorum satırlarını kaldırdık)
+                const resApp = await fetch(`${API_BASE}/appointments?expertId=${user.id}`);
+                if (resApp.ok) {
+                    const data = await resApp.json();
+                    // Backend'den gelen veri ile Frontend tipi uyuşmazsa burada map işlemi gerekebilir
+                    // Şimdilik direkt set ediyoruz.
+                    setAppointments(data);
+                }
+
+                // (Sorular ve Bloglar için de benzer endpointler yazılınca burası açılacak)
+
+            } catch (error) {
+                console.error("Veri çekme hatası:", error);
+            }
+        };
+        fetchData();
+    }, [user.id]);
 
     // --- TAKVİM FONKSİYONLARI ---
     const getDaysInMonth = (date: Date) => {
@@ -148,19 +77,28 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
         return { days, startingDay, monthName: date.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) };
     };
 
-    const changeMonth = (delta: number) => {
-        const newDate = new Date(currentDate);
-        newDate.setMonth(newDate.getMonth() + delta);
-        setCurrentDate(newDate);
-    };
+    const changeMonth = (delta: number) => { const newDate = new Date(currentDate); newDate.setMonth(newDate.getMonth() + delta); setCurrentDate(newDate); };
 
     const handleDateClick = (day: number) => {
         const d = new Date(currentDate);
         d.setDate(day);
+        // Tarih formatı: YYYY-MM-DD (Backend ile uyumlu olması için)
         const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
         setSelectedDate(formattedDate);
-        const existingTimes = availableSlots.filter(slot => slot.date === formattedDate).map(slot => slot.time);
-        setSelectedTimes(existingTimes);
+
+        // --- GÜNCELLEME BURADA ---
+        // Veritabanından (availableSlots state'inden) bu tarihteki saatleri buluyoruz
+        const existingSlotsForDate = availableSlots
+            .filter(slot => {
+                // Backend'den gelen tarih "2026-01-12T00:00:00" formatında olabilir, sadece ilk 10 karaktere (YYYY-MM-DD) bakıyoruz
+                const slotDateStr = String(slot.availableDate).split('T')[0];
+                return slotDateStr === formattedDate;
+            })
+            .map(slot => slot.availableTime);
+
+        // O günün kayıtlı saatlerini seçili hale getiriyoruz
+        setSelectedTimes(existingSlotsForDate);
     };
 
     const toggleTimeSelection = (time: string) => {
@@ -168,17 +106,57 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
         else setSelectedTimes([...selectedTimes, time]);
     };
 
-    const handleSaveAvailability = () => {
+    const handleSaveAvailability = async () => {
         if (!selectedDate) return alert("Lütfen bir tarih seçin.");
-        if (selectedTimes.length === 0) return alert("Lütfen en az bir saat seçin.");
-        const otherSlots = availableSlots.filter(s => s.date !== selectedDate);
-        const newSlots = selectedTimes.map(time => ({ id: Date.now() + Math.random(), date: selectedDate, time: time }));
-        setAvailableSlots([...otherSlots, ...newSlots]);
-        setShowCalendarModal(false);
-        setSelectedDate("");
-        setSelectedTimes([]);
-    };
 
+        // O tarihteki orijinal veritabanı kayıtlarını bul
+        const originalSlots = availableSlots.filter(slot => String(slot.availableDate).split('T')[0] === selectedDate);
+        const originalTimes = originalSlots.map(s => s.availableTime);
+
+        // 1. SİLİNECEKLERİ BUL (Eskiden vardı ama şimdi selectedTimes içinde yok)
+        const toDelete = originalSlots.filter(slot => !selectedTimes.includes(slot.availableTime));
+
+        // 2. EKLENECEKLERİ BUL (Eskiden yoktu ama şimdi selectedTimes içinde var)
+        const toAdd = selectedTimes.filter(time => !originalTimes.includes(time));
+
+        if (toDelete.length === 0 && toAdd.length === 0) {
+            return alert("Herhangi bir değişiklik yapmadınız.");
+        }
+
+        try {
+            // SİLME İŞLEMLERİ (Backend'de DeleteSlot endpoint'i olmalı)
+            for (const slot of toDelete) {
+                await fetch(`${API_BASE}/ExpertAvailability/${slot.id}`, { method: 'DELETE' });
+            }
+
+            // EKLEME İŞLEMLERİ
+            for (const time of toAdd) {
+                await fetch(`${API_BASE}/ExpertAvailability`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        expertId: user.id,
+                        availableDate: selectedDate,
+                        availableTime: time
+                    })
+                });
+            }
+
+            alert("Takvim başarıyla güncellendi! ✅");
+
+            // Listeyi Yenile
+            const res = await fetch(`${API_BASE}/ExpertAvailability/${user.id}`);
+            if (res.ok) setAvailableSlots(await res.json());
+
+            setShowCalendarModal(false);
+            setSelectedDate("");
+            setSelectedTimes([]);
+
+        } catch (error) {
+            console.error(error);
+            alert("İşlem sırasında bir hata oluştu.");
+        }
+    };
     const handleEditDay = (dateStr: string) => {
         setSelectedDate(dateStr);
         const existingTimes = availableSlots.filter(s => s.date === dateStr).map(s => s.time);
@@ -188,9 +166,13 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
     };
 
     // --- ACTIONS ---
-    const handleAppointmentAction = (id: number, status: 'approved' | 'rejected') => {
-        const updated = appointments.map(app => app.id === id ? { ...app, status: status } : app);
-        setAppointments(updated);
+    const handleAppointmentAction = async (id: number, status: 'approved' | 'rejected') => {
+        // UI Güncelleme
+        setAppointments(appointments.map(app => app.id === id ? { ...app, status: status } : app));
+
+        // API Güncelleme
+        // await fetch(`${API_BASE}/appointments/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status }) });
+
         alert(`Randevu ${status === 'approved' ? 'onaylandı' : 'reddedildi'} ve bildirim gönderildi.`);
     };
 
@@ -200,21 +182,20 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
 
     const handleReply = (qId: number) => {
         if (!replyText) return;
-        const updated = questions.map(q => q.id === qId ? { ...q, answer: replyText } : q);
-        setQuestions(updated);
+        setQuestions(questions.map(q => q.id === qId ? { ...q, answer: replyText } : q));
+        // API Call here...
         setReplyText("");
         setActiveQuestionId(null);
     };
 
-    // GÜNCELLENDİ: Ürün onaylama artık modal içinden de çalışabiliyor
     const toggleProductApproval = (prodId: number) => {
         const updated = localProducts.map(p => p.id === prodId ? { ...p, isApproved: !p.isApproved } : p);
         setLocalProducts(updated);
-
-        // Eğer inceleme penceresi açıksa oradaki veriyi de güncelle (Anlık yansıması için)
+        // Eğer modal açıksa orayı da güncelle
         if (inspectingProduct && inspectingProduct.id === prodId) {
             setInspectingProduct({ ...inspectingProduct, isApproved: !inspectingProduct.isApproved });
         }
+        // API Call here...
     };
 
     const handleEditPost = (post: BlogPost) => {
@@ -222,22 +203,27 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
         setPostForm({ title: post.title, category: post.category, content: post.content, imageUrl: post.imageUrl, relatedProductIds: post.relatedProductIds });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
     const handleCancelEdit = () => { setEditingId(null); setPostForm({ title: '', category: 'Gelişim', content: '', imageUrl: '', relatedProductIds: [] }); };
 
     const handleSavePost = (status: 'draft' | 'published') => {
         if (!postForm.title || !postForm.content) return alert("Başlık ve içerik zorunludur.");
+
         if (editingId) {
             const updatedPosts = blogPosts.map(post => post.id === editingId ? { ...post, ...postForm, status: status } : post);
             setBlogPosts(updatedPosts);
             alert("Yazı güncellendi!");
         } else {
-            const newPost: BlogPost = { id: Date.now(), ...postForm, status: status, views: 0, date: new Date().toLocaleDateString('tr-TR') };
+            const newPost: BlogPost = { id: Date.now(), ...postForm, status: status, views: 0, date: new Date().toLocaleDateString('tr-TR'), relatedProductIds: postForm.relatedProductIds };
             setBlogPosts([newPost, ...blogPosts]);
             alert("Yazı eklendi!");
         }
+        // API Call here...
         handleCancelEdit();
     };
+
     const handleDeletePost = (id: number) => { if (confirm("Silinsin mi?")) setBlogPosts(blogPosts.filter(p => p.id !== id)); };
+
     const toggleRelatedProduct = (prodId: number) => {
         if (postForm.relatedProductIds.includes(prodId)) setPostForm({ ...postForm, relatedProductIds: postForm.relatedProductIds.filter(id => id !== prodId) });
         else setPostForm({ ...postForm, relatedProductIds: [...postForm.relatedProductIds, prodId] });
@@ -262,70 +248,116 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
         </div>
     );
 
-    const renderAppointments = () => (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-[#A49EC2]">Randevu Yönetimi</h2>
-                <button onClick={() => { setShowCalendarModal(true); setSelectedDate(""); setSelectedTimes([]); }} className="bg-[#A49EC2] text-white px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition shadow-lg shadow-purple-200 flex items-center gap-2">
-                    <Plus size={16} /> Takvimi Düzenle
-                </button>
-            </div>
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F7E9CE]">
-                <h3 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wide flex items-center gap-2"><Calendar size={16} /> Müsait Olduğunuz Günler ve Saatler</h3>
-                {availableSlots.length === 0 ? (
-                    <div className="text-center py-8 bg-[#FDFBF7] rounded-2xl border border-dashed border-[#F7DCA1]">
-                        <p className="text-gray-400 text-sm">Henüz müsait zaman eklemediniz.</p>
-                        <button onClick={() => setShowCalendarModal(true)} className="text-[#A49EC2] text-xs font-bold mt-2 hover:underline">Şimdi Ekle</button>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {Object.entries(availableSlots.reduce((acc, slot) => { (acc[slot.date] = acc[slot.date] || []).push(slot); return acc; }, {} as Record<string, AvailableSlot[]>)).map(([date, slots]) => (
-                            <div key={date} className="bg-[#FDFBF7] border border-[#F7E9CE] rounded-2xl p-4 relative group">
-                                <button onClick={() => handleEditDay(date)} className="absolute top-3 right-3 text-[#A49EC2] bg-white p-1.5 rounded-lg border border-purple-100 hover:bg-purple-50 transition shadow-sm" title="Bu günü düzenle"><Edit3 size={14} /></button>
-                                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#F7E9CE]">
-                                    <div className="bg-[#A49EC2] text-white p-1.5 rounded-lg"><Calendar size={14} /></div>
-                                    <span className="font-bold text-gray-700 text-sm">{new Date(date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {slots.sort((a, b) => a.time.localeCompare(b.time)).map(slot => (
-                                        <div key={slot.id} className="bg-white text-[#A49EC2] px-3 py-1.5 rounded-lg text-xs font-bold border border-[#A49EC2]/20 flex items-center gap-2 shadow-sm">
-                                            {slot.time}
-                                            <button onClick={() => handleDeleteSlot(slot.id)} className="text-red-300 hover:text-red-500 hover:bg-red-50 rounded-full p-0.5 transition"><X size={12} /></button>
+    // --- GÜNCELLENMİŞ VE SAĞLAM RENDER FONKSİYONU ---
+    const renderAppointments = () => {
+        // Yardımcı Fonksiyon: Backend'den büyük harf de gelse küçük de gelse veriyi al
+        // Bu fonksiyon "localeCompare" hatasını önler.
+        const getSafeDate = (item: any) => item.availableDate || item.AvailableDate || item.date || item.Date || "";
+        const getSafeTime = (item: any) => item.availableTime || item.AvailableTime || item.time || item.Time || "";
+
+        // 1. Slotları tarihe göre gruplayalım
+        const groupedSlots = availableSlots.reduce((groups: any, slot: any) => {
+            const dateRaw = getSafeDate(slot);
+            if (!dateRaw) return groups;
+
+            const dateKey = String(dateRaw).split('T')[0]; // Sadece tarihi al (YYYY-MM-DD)
+            if (!groups[dateKey]) groups[dateKey] = [];
+            groups[dateKey].push(slot);
+            return groups;
+        }, {});
+
+        // 2. Tarihleri sıralayalım
+        const sortedDates = Object.keys(groupedSlots).sort((a, b) => a.localeCompare(b));
+
+        return (
+            <div className="space-y-8 animate-in slide-in-from-bottom-4">
+
+                {/* --- BÖLÜM 1: DOLU (SATIN ALINAN) RANDEVULAR --- */}
+                <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-[#75AFBC]/20 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-[#75AFBC]"></div>
+                    <h3 className="font-black text-2xl text-gray-800 mb-6 flex items-center gap-3">
+                        <CalendarCheck size={28} className="text-[#75AFBC]" />
+                        Gelecek Seanslarınız (Kesinleşmiş)
+                    </h3>
+
+                    {appointments.length === 0 ? (
+                        <div className="text-center p-8 bg-blue-50/50 rounded-3xl border border-dashed border-blue-200">
+                            <p className="text-[#75AFBC] font-bold">Henüz satın alınmış bir seansınız yok.</p>
+                            <p className="text-sm text-gray-400 mt-1">Ebeveynler randevu aldığında burada görünecek.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {appointments.map((app: any) => (
+                                <div key={app.id || app.Id} className="flex flex-col md:flex-row justify-between items-center p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-[#75AFBC]/10 p-3 rounded-xl text-[#75AFBC] font-black text-center min-w-[80px]">
+                                            <div className="text-xl">{getSafeTime(app)}</div>
+                                            <div className="text-[10px] uppercase tracking-wider">{new Date(getSafeDate(app)).toLocaleDateString('tr-TR', { weekday: 'short' })}</div>
                                         </div>
-                                    ))}
+                                        <div>
+                                            <div className="font-bold text-gray-800 text-lg">{app.childName || app.ChildName} <span className="text-gray-400 text-sm font-normal">({app.childAge || app.ChildAge} Yaş)</span></div>
+                                            <div className="text-sm text-gray-500 line-clamp-1">{app.topic || app.Topic}</div>
+                                            <div className="text-xs text-[#75AFBC] font-bold mt-1">{new Date(getSafeDate(app)).toLocaleDateString('tr-TR')}</div>
+                                        </div>
+                                    </div>
+                                    <span className="px-4 py-2 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200 flex items-center gap-1">
+                                        <CheckCircle2 size={12} /> Onaylandı
+                                    </span>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="bg-white rounded-3xl shadow-sm border border-[#F7E9CE] overflow-hidden">
-                {appointments.length === 0 ? <div className="p-8 text-center text-gray-400">Talep yok.</div> : appointments.map(app => (
-                    <div key={app.id} className="p-6 flex flex-col md:flex-row gap-6 items-start md:items-center border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                        <div className="bg-[#F7E9CE] text-[#A49EC2] p-4 rounded-2xl flex flex-col items-center min-w-[80px]">
-                            <span className="text-xs font-bold uppercase">{new Date(app.date).toLocaleString('tr-TR', { month: 'short' })}</span>
-                            <span className="text-2xl font-bold">{new Date(app.date).getDate()}</span>
-                            <span className="text-xs font-medium">{app.time}</span>
+                            ))}
                         </div>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-bold text-gray-800 text-lg">{app.parentName}</h3>
-                                {app.status === 'pending' && <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full font-bold">Onay Bekliyor</span>}
-                                {app.status === 'approved' && <span className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded-full font-bold">Onaylandı</span>}
-                                {app.status === 'rejected' && <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full font-bold">Reddedildi</span>}
-                            </div>
-                            <p className="text-gray-600 text-sm italic">"{app.topic}"</p>
-                        </div>
-                        {app.status === 'pending' && <div className="flex gap-2"><button onClick={() => handleAppointmentAction(app.id, 'approved')} className="bg-green-500 text-white p-3 rounded-xl"><CheckCircle size={20} /></button><button onClick={() => handleAppointmentAction(app.id, 'rejected')} className="bg-red-400 text-white p-3 rounded-xl"><XCircle size={20} /></button></div>}
+                    )}
+                </div>
+
+                {/* --- BÖLÜM 2: MÜSAİT SAATLERİNİZ --- */}
+                <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-[#A49EC2]/20 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-[#A49EC2]"></div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="font-black text-2xl text-gray-800 flex items-center gap-3">
+                            <Clock size={28} className="text-[#A49EC2]" />
+                            Müsaitlik Takviminiz
+                        </h3>
+                        <button onClick={() => { setShowCalendarModal(true); setSelectedDate(""); setSelectedTimes([]); }} className="bg-[#A49EC2] text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#938db0] transition shadow-lg shadow-purple-100 flex items-center gap-2">
+                            <Plus size={16} /> Saat Ekle / Düzenle
+                        </button>
                     </div>
-                ))}
+
+                    {sortedDates.length === 0 ? (
+                        <div className="text-center p-8 bg-purple-50/50 rounded-3xl border border-dashed border-purple-200">
+                            <p className="text-[#A49EC2] font-bold">Takviminiz boş görünüyor.</p>
+                            <p className="text-sm text-gray-400 mt-1">"Saat Ekle" butonuna basarak müsait zamanlarınızı belirleyin.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {sortedDates.map(dateKey => (
+                                <div key={dateKey} className="bg-gray-50 p-5 rounded-3xl border border-gray-100">
+                                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+                                        <Calendar size={18} className="text-gray-400" />
+                                        <span className="font-bold text-gray-700">
+                                            {new Date(dateKey).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {groupedSlots[dateKey]
+                                            .sort((a: any, b: any) => getSafeTime(a).localeCompare(getSafeTime(b)))
+                                            .map((slot: any) => (
+                                                <div key={slot.id || slot.Id} className="bg-white text-[#A49EC2] px-3 py-1.5 rounded-lg text-sm font-bold border border-purple-100 shadow-sm flex items-center gap-2 cursor-default">
+                                                    {getSafeTime(slot)}
+                                                </div>
+                                            ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const renderQuestions = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {questions.map(q => (
+            {questions.length === 0 ? <div className="col-span-full text-center p-10 text-gray-400">Henüz soru gelmemiş.</div> : questions.map(q => (
                 <div key={q.id} className="bg-white p-6 rounded-3xl shadow-sm border border-[#F7E9CE]">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
@@ -409,7 +441,7 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
             <div className="lg:col-span-2">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">Yazılarınız ({blogPosts.length})</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {blogPosts.map(post => (
+                    {blogPosts.length === 0 ? <p className="text-gray-400">Henüz yazı paylaşmadınız.</p> : blogPosts.map(post => (
                         <div key={post.id} className={`bg-white rounded-3xl shadow-sm border overflow-hidden group transition ${editingId === post.id ? 'ring-2 ring-[#A49EC2]' : 'border-[#F7E9CE]'}`}>
                             <div className="h-40 bg-gray-100 relative">
                                 {post.imageUrl ? <img src={post.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><FileText size={40} /></div>}
@@ -481,8 +513,8 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
                                 <button
                                     onClick={() => toggleProductApproval(inspectingProduct.id)}
                                     className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition shadow-lg transform active:scale-95 ${inspectingProduct.isApproved
-                                            ? 'bg-red-50 text-red-500 hover:bg-red-100'
-                                            : 'bg-[#A49EC2] text-white hover:opacity-90 shadow-purple-200'
+                                        ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                                        : 'bg-[#A49EC2] text-white hover:opacity-90 shadow-purple-200'
                                         }`}
                                 >
                                     {inspectingProduct.isApproved
