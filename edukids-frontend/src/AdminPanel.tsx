@@ -26,6 +26,7 @@ interface User {
 
 const CATEGORIES = ["Motor Beceriler", "Dil Gelişimi", "Bilişsel Zeka", "Sosyal Duygusal"];
 const API_BASE = "http://localhost:5063/api/Admin";
+const AGE_GROUPS = ["0-3 Yaş", "3-6 Yaş", "6-12 Yaş"];
 
 const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
     const [activeTab, setActiveTab] = useState<'stats' | 'products' | 'experts' | 'users'>('stats');
@@ -37,7 +38,7 @@ const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
     const [showProductModal, setShowProductModal] = useState(false);
     const [showExpertModal, setShowExpertModal] = useState(false);
 
-    const [newProd, setNewProd] = useState({ name: '', category: 0, price: '', stock: '', description: '', imageUrl: '' });
+    const [newProd, setNewProd] = useState({ name: '', category: 0, ageGroup: 0, price: '', stock: '', description: '', imageUrl: '' });
     const [newExpert, setNewExpert] = useState({ name: '', email: '', password: '' });
 
     // --- GÜÇLENDİRİLMİŞ VERİ ÇEKME FONKSİYONU ---
@@ -125,11 +126,11 @@ const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
         const productData = {
             name: newProd.name,
             category: Number(newProd.category),
+            ageGroup: Number(newProd.ageGroup), // <-- YENİ EKLENDİ
             price: parseFloat(newProd.price),
             stock: parseInt(newProd.stock),
             description: newProd.description,
             imageUrl: newProd.imageUrl || "",
-            ageGroup: 0
         };
 
         const res = await fetch(`${API_BASE}/products`, {
@@ -142,7 +143,8 @@ const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
             const saved = await res.json();
             setProducts([saved, ...products]);
             setShowProductModal(false);
-            setNewProd({ name: '', category: 0, price: '', stock: '', description: '', imageUrl: '' });
+            // Formu sıfırla
+            setNewProd({ name: '', category: 0, ageGroup: 0, price: '', stock: '', description: '', imageUrl: '' });
         }
     };
 
@@ -307,14 +309,30 @@ const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
                     <div className="bg-white w-full max-w-xl rounded-[2rem] p-8 shadow-2xl">
                         <h3 className="text-2xl font-black text-gray-800 mb-6">Yeni Ürün Tanımla</h3>
                         <form onSubmit={handleAddProduct} className="grid grid-cols-2 gap-4">
+
+                            <input className="col-span-2 p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Görsel URL (https://...)" value={newProd.imageUrl} onChange={e => setNewProd({ ...newProd, imageUrl: e.target.value })} />
+
                             <input required className="col-span-2 p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Ürün Adı" value={newProd.name} onChange={e => setNewProd({ ...newProd, name: e.target.value })} />
+
+                            {/* KATEGORİ SEÇİMİ */}
                             <select className="p-3 border-2 border-gray-100 rounded-xl outline-none" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: Number(e.target.value) })}>
                                 {CATEGORIES.map((c, i) => <option key={i} value={i}>{c}</option>)}
                             </select>
+
+                            {/* --- YENİ EKLENEN YAŞ GRUBU SEÇİMİ --- */}
+                            <select className="p-3 border-2 border-gray-100 rounded-xl outline-none" value={newProd.ageGroup} onChange={e => setNewProd({ ...newProd, ageGroup: Number(e.target.value) })}>
+                                {AGE_GROUPS.map((age, i) => <option key={i} value={i}>{age}</option>)}
+                            </select>
+                            {/* -------------------------------------- */}
+
                             <input required type="number" className="p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Fiyat (₺)" value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} />
                             <input required type="number" className="p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Stok" value={newProd.stock} onChange={e => setNewProd({ ...newProd, stock: e.target.value })} />
                             <textarea required className="col-span-2 p-3 border-2 border-gray-100 rounded-xl h-24 outline-none resize-none" placeholder="Açıklama" value={newProd.description} onChange={e => setNewProd({ ...newProd, description: e.target.value })} />
-                            <button className="col-span-2 bg-[#75AFBC] text-white py-4 rounded-xl font-black shadow-lg">DATABASE'E EKLE</button>
+
+                            <div className="col-span-2 flex gap-3">
+                                <button type="button" onClick={() => setShowProductModal(false)} className="flex-1 py-4 rounded-xl font-bold text-gray-500 hover:bg-gray-100">İptal</button>
+                                <button className="flex-[2] bg-[#75AFBC] text-white py-4 rounded-xl font-black shadow-lg">KAYDET</button>
+                            </div>
                         </form>
                     </div>
                 </div>

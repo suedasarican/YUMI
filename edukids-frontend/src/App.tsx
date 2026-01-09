@@ -17,7 +17,8 @@ import sliderResim2 from './assets/p2.jpeg';
 import sliderResim3 from './assets/p3.jpeg';
 // --- CONFIG ---
 const API_BASE = "http://localhost:5063/api";
-
+// Diğer importların altına ekle:
+import psikologImg from './assets/psikolog.jpeg';
 // --- TİPLER ---
 type UserRole = 0 | 1 | 2; // 0: Admin, 1: Uzman, 2: Ebeveyn
 
@@ -48,15 +49,7 @@ const getPlaceholderImage = (catId: number) => {
     return images[catId % images.length] || images[0];
 };
 
-// --- MOCK VERİLER (Sadece Mağaza Ürünleri Kaldı) ---
-const MOCK_PRODUCTS: Product[] = [
-    { id: 1, name: "Yumuşak Duyu Blokları", category: 0, ageGroup: 0, price: 450, description: "Bebeğinizin dokunma duyusunu geliştiren yumuşak ve renkli bloklar.", stock: 15, isExpertApproved: true, imageUrl: "https://images.unsplash.com/photo-1596464716127-f9a8625579c3?w=500&q=80" },
-    { id: 2, name: "Ahşap Şekil Eşleştirme", category: 2, ageGroup: 0, price: 320, description: "Problem çözme ve şekil tanıma yeteneklerini destekleyen klasik ahşap set.", stock: 12, isExpertApproved: true, imageUrl: "https://images.unsplash.com/photo-1618842676088-7e43c69bc266?w=500&q=80" },
-    { id: 3, name: "Konuşan Kelime Kartları", category: 1, ageGroup: 1, price: 850, description: "Sesli telaffuz özelliği ile kelime dağarcığını geliştiren interaktif set.", stock: 5, isExpertApproved: true, imageUrl: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=500&q=80" },
-    { id: 4, name: "Duygu Kartları", category: 3, ageGroup: 1, price: 120, description: "50 farklı duygu durumu kartı ile sosyal zekayı destekler.", stock: 50, isExpertApproved: false, imageUrl: "https://images.unsplash.com/photo-1515488042361-25f4682f0877?w=500&q=80" },
-    { id: 5, name: "Kodlama Robotu", category: 2, ageGroup: 2, price: 1250, description: "Algoritma mantığı öğreten sevimli robot arkadaş.", stock: 8, isExpertApproved: true, imageUrl: "https://images.unsplash.com/photo-1535378437327-b71494669e9d?w=500&q=80" },
-    { id: 6, name: "Gökkuşağı Denge Oyunu", category: 0, ageGroup: 1, price: 280, description: "El-göz koordinasyonu için eğlenceli denge oyunu.", stock: 20, isExpertApproved: false, imageUrl: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=500&q=80" },
-];
+
 
 // --- YILDIZLI ARKA PLAN ---
 const StarBackground = () => (
@@ -467,40 +460,154 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
     );
 };
 // --- SHOP PAGE ---
-const ShopPage = ({ products, onAddToCartClick }: any) => {
+// --- GÜNCELLENMİŞ SHOP PAGE (FİLTRELİ & GÖRSEL DÜZELTİLMİŞ) ---
+const ShopPage = ({ products, onAddToCartClick }: { products: Product[], onAddToCartClick: (p: Product) => void }) => {
+
+    // Filtreleme State'leri
+    const [selectedAgeGroups, setSelectedAgeGroups] = useState<number[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+
+    // Yaş Grubu Filtresi (Toggle)
+    const toggleAge = (index: number) => {
+        setSelectedAgeGroups(prev =>
+            prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+        );
+    };
+
+    // Kategori Filtresi (Toggle)
+    const toggleCat = (index: number) => {
+        setSelectedCategories(prev =>
+            prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+        );
+    };
+
+    // Ürünleri Filtrele
+    const filteredProducts = products.filter(product => {
+        // Eğer hiçbir yaş seçilmediyse hepsini göster, seçildiyse eşleşeni göster
+        const ageMatch = selectedAgeGroups.length === 0 || selectedAgeGroups.includes(product.ageGroup);
+        // Eğer hiçbir kategori seçilmediyse hepsini göster, seçildiyse eşleşeni göster
+        const catMatch = selectedCategories.length === 0 || selectedCategories.includes(product.category);
+
+        return ageMatch && catMatch;
+    });
+
     return (
         <div id="shop-top" className="flex flex-col lg:flex-row gap-8 items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* SOL FİLTRE PANELİ */}
             <div className="w-full lg:w-72 shrink-0 bg-white/90 p-6 rounded-[2rem] shadow-sm border border-white sticky top-24">
-                <div className="flex items-center gap-2 mb-6 text-gray-800"><Filter size={20} className="text-yumi-blue" /><h3 className="font-bold text-lg">Filtreler</h3></div>
-                <div className="mb-8"><h4 className="font-bold text-gray-700 mb-3 text-sm">Yaş Grubu</h4><div className="space-y-2">{AGE_GROUPS.map((age, i) => (<label key={i} className="flex items-center gap-3 cursor-pointer group"><div className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center group-hover:border-[#75AFBC] transition bg-white"><input type="checkbox" className="hidden peer" /><CheckCircle2 size={14} className="text-white opacity-0 peer-checked:opacity-100 bg-[#75AFBC] rounded-sm w-full h-full p-0.5 transition-all" /></div><span className="text-gray-600 text-sm group-hover:text-[#75AFBC] transition font-medium">{age}</span></label>))}</div></div>
-                <div><h4 className="font-bold text-gray-700 mb-3 text-sm">Gelişim Alanı</h4><div className="space-y-2">{CATEGORIES.map((cat, i) => (<label key={i} className="flex items-center gap-3 cursor-pointer group"><div className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center group-hover:border-[#A49EC2] transition bg-white"><input type="checkbox" className="hidden peer" /><CheckCircle2 size={14} className="text-white opacity-0 peer-checked:opacity-100 bg-[#A49EC2] rounded-sm w-full h-full p-0.5 transition-all" /></div><span className="text-gray-600 text-sm group-hover:text-[#A49EC2] transition font-medium">{cat}</span></label>))}</div></div>
+                <div className="flex items-center gap-2 mb-6 text-gray-800">
+                    <Filter size={20} className="text-[#75AFBC]" />
+                    <h3 className="font-bold text-lg">Filtreler</h3>
+                </div>
+
+                {/* Yaş Filtresi */}
+                <div className="mb-8">
+                    <h4 className="font-bold text-gray-700 mb-3 text-sm">Yaş Grubu</h4>
+                    <div className="space-y-2">
+                        {AGE_GROUPS.map((age, i) => (
+                            <label key={i} className="flex items-center gap-3 cursor-pointer group select-none">
+                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${selectedAgeGroups.includes(i) ? 'bg-[#75AFBC] border-[#75AFBC]' : 'border-gray-300 bg-white group-hover:border-[#75AFBC]'}`}>
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={selectedAgeGroups.includes(i)}
+                                        onChange={() => toggleAge(i)}
+                                    />
+                                    <CheckCircle2 size={14} className={`text-white transition-all ${selectedAgeGroups.includes(i) ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+                                </div>
+                                <span className={`text-sm transition font-medium ${selectedAgeGroups.includes(i) ? 'text-[#75AFBC]' : 'text-gray-600 group-hover:text-[#75AFBC]'}`}>{age}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Kategori Filtresi */}
+                <div>
+                    <h4 className="font-bold text-gray-700 mb-3 text-sm">Gelişim Alanı</h4>
+                    <div className="space-y-2">
+                        {CATEGORIES.map((cat, i) => (
+                            <label key={i} className="flex items-center gap-3 cursor-pointer group select-none">
+                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${selectedCategories.includes(i) ? 'bg-[#A49EC2] border-[#A49EC2]' : 'border-gray-300 bg-white group-hover:border-[#A49EC2]'}`}>
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={selectedCategories.includes(i)}
+                                        onChange={() => toggleCat(i)}
+                                    />
+                                    <CheckCircle2 size={14} className={`text-white transition-all ${selectedCategories.includes(i) ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+                                </div>
+                                <span className={`text-sm transition font-medium ${selectedCategories.includes(i) ? 'text-[#A49EC2]' : 'text-gray-600 group-hover:text-[#A49EC2]'}`}>{cat}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
             </div>
+
+            {/* SAĞ ÜRÜN LİSTESİ */}
             <div className="flex-1">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 bg-white/80 p-4 rounded-2xl border border-white shadow-sm">
-                    <div><h1 className="text-2xl font-black text-gray-800">Tüm Ürünler</h1><p className="text-gray-500 text-sm font-medium">{products.length} ürün listeleniyor</p></div>
-                    <button className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition shadow-sm">Önerilen Sıralama <ChevronDown size={16} /></button>
+                    <div>
+                        <h1 className="text-2xl font-black text-gray-800">Tüm Ürünler</h1>
+                        <p className="text-gray-500 text-sm font-medium">
+                            {filteredProducts.length} ürün listeleniyor
+                        </p>
+                    </div>
+                    <button className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition shadow-sm">
+                        Önerilen Sıralama <ChevronDown size={16} />
+                    </button>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {products.map((product: Product) => (
-                        <div key={product.id} className="bg-white rounded-[2rem] border border-white p-4 hover:shadow-xl hover:shadow-purple-100 transition duration-500 group flex flex-col h-full relative">
-                            <div className="h-56 relative rounded-2xl overflow-hidden bg-gray-50 mb-4">
-                                <img src={getPlaceholderImage(product.category)} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
-                                {product.isExpertApproved && <div className="absolute top-3 right-3 bg-[#F7DCA1] text-yellow-900 text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-md transform group-hover:scale-105 transition"><CheckCircle2 size={12} fill="currentColor" className="text-white" /> Uzman Onaylı</div>}
-                            </div>
-                            <div className="flex-1 flex flex-col px-1">
-                                <div className="flex gap-2 mb-3">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#A49EC2] bg-purple-50 px-2 py-1 rounded-md border border-purple-100">{CATEGORIES[product.category]}</span>
-                                    <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">{AGE_GROUPS[product.ageGroup]}</span>
-                                </div>
-                                <h3 className="font-bold text-gray-800 text-lg mb-2 leading-tight group-hover:text-[#A49EC2] transition">{product.name}</h3>
-                                <p className="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed font-medium">{product.description}</p>
-                                <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50">
-                                    <span className="text-2xl font-black text-gray-800">{product.price} <span className="text-sm font-bold text-gray-400">TL</span></span>
-                                    <button onClick={() => onAddToCartClick(product)} className="w-10 h-10 rounded-full bg-[#F7DCA1] text-yellow-900 flex items-center justify-center hover:bg-[#A49EC2] hover:text-white transition shadow-md hover:scale-110 active:scale-95"><Plus size={24} strokeWidth={3} /></button>
-                                </div>
-                            </div>
+                    {filteredProducts.length === 0 ? (
+                        <div className="col-span-3 text-center py-20 text-gray-400 font-medium bg-white rounded-[2rem] border border-dashed">
+                            Aradığınız kriterlere uygun ürün bulunamadı.
                         </div>
-                    ))}
+                    ) : (
+                        filteredProducts.map((product) => (
+                            <div key={product.id} className="bg-white rounded-[2rem] border border-white p-4 hover:shadow-xl hover:shadow-purple-100 transition duration-500 group flex flex-col h-full relative">
+                                <div className="h-56 relative rounded-2xl overflow-hidden bg-gray-50 mb-4">
+                                    {/* --- GÖRSEL URL DÜZELTMESİ --- */}
+                                    <img
+                                        src={product.imageUrl || getPlaceholderImage(product.category)}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                                        alt={product.name}
+                                    />
+                                    {/* ----------------------------- */}
+
+                                    {product.isExpertApproved && (
+                                        <div className="absolute top-3 right-3 bg-[#F7DCA1] text-yellow-900 text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-md transform group-hover:scale-105 transition">
+                                            <CheckCircle2 size={12} fill="currentColor" className="text-white" /> Uzman Onaylı
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 flex flex-col px-1">
+                                    <div className="flex gap-2 mb-3">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#A49EC2] bg-purple-50 px-2 py-1 rounded-md border border-purple-100">
+                                            {CATEGORIES[product.category]}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                                            {AGE_GROUPS[product.ageGroup]}
+                                        </span>
+                                    </div>
+                                    <h3 className="font-bold text-gray-800 text-lg mb-2 leading-tight group-hover:text-[#A49EC2] transition">
+                                        {product.name}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed font-medium">
+                                        {product.description}
+                                    </p>
+                                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50">
+                                        <span className="text-2xl font-black text-gray-800">
+                                            {product.price} <span className="text-sm font-bold text-gray-400">TL</span>
+                                        </span>
+                                        <button onClick={() => onAddToCartClick(product)} className="w-10 h-10 rounded-full bg-[#F7DCA1] text-yellow-900 flex items-center justify-center hover:bg-[#A49EC2] hover:text-white transition shadow-md hover:scale-110 active:scale-95">
+                                            <Plus size={24} strokeWidth={3} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>
@@ -677,7 +784,10 @@ const ParentPanel = ({ products, user, onAddToCart }: any) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4 pb-12">
                     {experts.map(expert => (
                         <div key={expert.id} className="bg-white p-6 rounded-[2rem] border border-white shadow-sm hover:shadow-lg transition flex flex-col md:flex-row gap-6 items-center">
-                            <img src={expert.imageUrl || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&q=80"} className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md" />
+                            <img
+                                src={expert.imageUrl || psikologImg}
+                                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+                            />
                             <div className="flex-1 text-center md:text-left">
                                 <h3 className="text-xl font-black text-gray-800">{expert.name}</h3>
                                 <p className="text-[#75AFBC] font-bold text-sm mb-2">{expert.title || "Uzman"}</p>
@@ -744,7 +854,18 @@ export default function App() {
     useEffect(() => {
         const handleHash = () => setIsAdminMode(window.location.hash === '#admin');
         window.addEventListener('hashchange', handleHash);
-        setProducts(MOCK_PRODUCTS); // Sadece ürün mock datası kaldı
+
+        // --- DEĞİŞİKLİK BURADA: MOCK YERİNE GERÇEK VERİTABANI ---
+        // AdminController'da yazdığımız GetProducts metodunu çağırıyoruz
+        fetch(`${API_BASE}/Admin/products`)
+            .then(res => res.json())
+            .then(data => {
+                setProducts(data); // Veritabanından gelenleri state'e at
+                console.log("Veritabanından çekilen ürünler:", data);
+            })
+            .catch(err => console.error("Ürünler çekilemedi:", err));
+        // ---------------------------------------------------------
+
         return () => window.removeEventListener('hashchange', handleHash);
     }, []);
 
