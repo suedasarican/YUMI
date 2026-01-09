@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Package, Plus, Trash2, X, Users, Mail, Key, Info,
-    TrendingUp, Star, Lock
+    TrendingUp, Star, Lock, CheckCircle2
 } from 'lucide-react';
 
-// --- TİPLER (App.tsx ile uyumlu olmalı) ---
+// --- TİPLER ---
 interface Product {
     id: number;
     name: string;
@@ -14,75 +14,171 @@ interface Product {
     description: string;
     stock: number;
     imageUrl?: string;
-    isExpertApproved?: boolean;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: any; // Sayı veya String gelebilir, esnek yaptık
+    isActive: boolean;
 }
 
 const CATEGORIES = ["Motor Beceriler", "Dil Gelişimi", "Bilişsel Zeka", "Sosyal Duygusal"];
+const API_BASE = "http://localhost:5063/api/Admin";
 
-const getPlaceholderImage = (catId: number) => {
-    const images = [
-        "https://images.unsplash.com/photo-1596464716127-f9a8625579c3?w=400&q=80",
-        "https://images.unsplash.com/photo-1618842676088-7e43c69bc266?w=400&q=80",
-        "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&q=80",
-        "https://images.unsplash.com/photo-1515488042361-25f4682f0877?w=500&q=80"
-    ];
-    return images[catId % images.length] || images[0];
-};
-
-const AdminPanel = ({ products, setProducts, onLogout }: { products: Product[], setProducts: any, onLogout: () => void }) => {
+const AdminPanel = ({ onLogout }: { onLogout: () => void }) => {
     const [activeTab, setActiveTab] = useState<'stats' | 'products' | 'experts' | 'users'>('stats');
+    const [products, setProducts] = useState<Product[]>([]);
+    const [experts, setExperts] = useState<User[]>([]);
+    const [parents, setParents] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+
     const [showProductModal, setShowProductModal] = useState(false);
     const [showExpertModal, setShowExpertModal] = useState(false);
 
-    // Form State'leri
     const [newProd, setNewProd] = useState({ name: '', category: 0, price: '', stock: '', description: '', imageUrl: '' });
-    const [newExpert, setNewExpert] = useState({ name: '', email: '', password: '', info: '' });
+    const [newExpert, setNewExpert] = useState({ name: '', email: '', password: '' });
 
-    // Uzman Listesi State'i
-    const [experts, setExperts] = useState([
-        { id: 1, name: "Uzman Zeynep", email: "zeynep@yumi.com", articles: 24, answers: 156, status: "Aktif", info: "Çocuk Gelişimi Uzmanı" },
-        { id: 2, name: "Uzman Mehmet", email: "mehmet@yumi.com", articles: 8, answers: 89, status: "Aktif", info: "Psikolog" }
-    ]);
+    // --- GÜÇLENDİRİLMİŞ VERİ ÇEKME FONKSİYONU ---
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            console.log("1. Veriler çekiliyor...");
 
-    const [users, setUsers] = useState([
-        { id: 1, name: "Süeda Kaya", email: "sueda@test.com", date: "2024-01-08" },
-        { id: 2, name: "Ahmet Yılmaz", email: "ahmet@test.com", date: "2024-01-07" }
-    ]);
+            // 1. Ürünleri Çek
+            // AdminController'da eklediğin [HttpGet("products")] metoduna istek atıyoruz
+            const prodRes = await fetch(`${API_BASE}/products`);
+            if (prodRes.ok) {
+                const prodData = await prodRes.json();
+                setProducts(prodData);
+                console.log("2. Ürünler Geldi:", prodData.length, "adet");
+            } else {
+                console.error("Ürünler çekilemedi:", prodRes.status);
+            }
 
-    // --- İŞLEMLER ---
-    const handleAddProduct = (e: React.FormEvent) => {
+            // 2. Kullanıcıları Çek
+            const userRes = await fetch(`${API_BASE}/users`);
+            if (userRes.ok) {
+                const allUsers = await userRes.json();
+                console.log("3. Ham Kullanıcı Listesi:", allUsers); // Konsola bakıp gelen veriyi görebilirsin
+
+                // --- FİLTRELEME MANTIĞI (SORUN BURADAYDI) ---
+                // Backend'den veri "role", "Role", "userRole" gibi farklı gelebilir.
+                // Hepsini kapsayan güvenli filtreleme:
+
+                // UZMANLARI BUL (Role: 1 veya "Expert")
+                const expertList = allUsers.filter((u: any) => {
+                    const r = u.role !== undefined ? u.role : u.Role;
+                    // Hem sayı (1) hem string ("Expert") kontrolü
+                    return r === 1 || r === "1" || r === "Expert" || r === "Uzman";
+                });
+
+                // EBEVEYNLERİ BUL (Role: 2 veya "Parent")
+                const parentList = allUsers.filter((u: any) => {
+                    const r = u.role !== undefined ? u.role : u.Role;
+                    // Hem sayı (2) hem string ("Parent") kontrolü
+                    return r === 2 || r === "2" || r === "Parent" || r === "Ebeveyn";
+                });
+
+                console.log(`4. Ayrıştırma Sonucu: ${expertList.length} Uzman, ${parentList.length} Ebeveyn`);
+
+                setExperts(expertList);
+                setParents(parentList);
+            } else {
+                console.error("Kullanıcılar çekilemedi:", userRes.status);
+            }
+
+        } catch (error) {
+            console.error("KRİTİK HATA:", error);
+            alert("Veritabanına bağlanılamadı. Backend çalışıyor mu?");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    // --- DİĞER FONKSİYONLAR (DEĞİŞMEDİ) ---
+
+    const handleDeleteUser = async (id: number, roleName: string) => {
+        if (!window.confirm(`Bu ${roleName} kaydını silmek istediğinize emin misiniz?`)) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/users/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+
+            if (res.ok) {
+                setExperts(prev => prev.filter(u => (u.id || (u as any).Id) !== id));
+                setParents(prev => prev.filter(u => (u.id || (u as any).Id) !== id));
+                alert(data.message);
+            } else {
+                alert(data.message || "İşlem başarısız.");
+            }
+        } catch (error) {
+            alert("Sunucuya bağlanılamadı.");
+        }
+    };
+
+    const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
-        const product: Product = {
-            id: Date.now(),
+        const productData = {
             name: newProd.name,
             category: Number(newProd.category),
-            price: Number(newProd.price),
-            stock: Number(newProd.stock),
+            price: parseFloat(newProd.price),
+            stock: parseInt(newProd.stock),
             description: newProd.description,
-            imageUrl: newProd.imageUrl || getPlaceholderImage(Number(newProd.category)),
+            imageUrl: newProd.imageUrl || "",
             ageGroup: 0
         };
-        setProducts([product, ...products]);
-        setShowProductModal(false);
-        setNewProd({ name: '', category: 0, price: '', stock: '', description: '', imageUrl: '' });
+
+        const res = await fetch(`${API_BASE}/products`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
+        });
+
+        if (res.ok) {
+            const saved = await res.json();
+            setProducts([saved, ...products]);
+            setShowProductModal(false);
+            setNewProd({ name: '', category: 0, price: '', stock: '', description: '', imageUrl: '' });
+        }
     };
 
-    const handleAddExpert = (e: React.FormEvent) => {
+    const handleDeleteProduct = async (id: number) => {
+        if (!window.confirm("Bu ürünü silmek istediğinize emin misiniz?")) return;
+        const res = await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
+        if (res.ok) setProducts(products.filter(p => p.id !== id));
+    };
+
+    const handleAddExpert = async (e: React.FormEvent) => {
         e.preventDefault();
-        const expert = {
-            id: Date.now(),
-            ...newExpert,
-            articles: 0,
-            answers: 0,
-            status: "Aktif"
+        const expertData = {
+            name: newExpert.name,
+            email: newExpert.email,
+            passwordHash: newExpert.password,
+            role: 1,
+            isActive: true
         };
-        setExperts([expert, ...experts]);
-        setShowExpertModal(false);
-        setNewExpert({ name: '', email: '', password: '', info: '' });
-    };
 
-    const updateStock = (id: number, val: number) => {
-        setProducts(products.map((p: any) => p.id === id ? { ...p, stock: Math.max(0, p.stock + val) } : p));
+        try {
+            const res = await fetch(`${API_BASE}/experts`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(expertData)
+            });
+
+            if (res.ok) {
+                const saved = await res.json();
+                setExperts(prev => [saved, ...prev]);
+                setShowExpertModal(false);
+                setNewExpert({ name: '', email: '', password: '' });
+                alert("Uzman veritabanına başarıyla eklendi!");
+            }
+        } catch (error) {
+            alert("Bağlantı hatası!");
+        }
     };
 
     return (
@@ -92,160 +188,152 @@ const AdminPanel = ({ products, setProducts, onLogout }: { products: Product[], 
                 {/* HEADER */}
                 <div className="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm border border-[#F7E9CE]">
                     <h1 className="text-2xl font-black text-[#A49EC2] flex items-center gap-2"><Lock /> YUMI ADMIN</h1>
-                    <button onClick={onLogout} className="text-sm font-bold text-gray-400 hover:text-red-500 transition">Panelden Çık</button>
+                    <button onClick={onLogout} className="text-sm font-bold text-gray-400 hover:text-red-500 transition">Güvenli Çıkış</button>
                 </div>
 
-                <div className="flex flex-col md:flex-row min-h-[600px] bg-white/95 backdrop-blur rounded-[2.5rem] shadow-2xl border border-[#F7E9CE] overflow-hidden animate-in zoom-in duration-300">
+                <div className="flex flex-col md:flex-row min-h-[600px] bg-white rounded-[2.5rem] shadow-2xl border border-[#F7E9CE] overflow-hidden">
 
-                    {/* --- ÜRÜN EKLEME MODAL --- */}
-                    {showProductModal && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                            <div className="bg-white w-full max-w-xl rounded-[2rem] shadow-2xl border-4 border-white animate-in slide-in-from-bottom-8">
-                                <div className="p-6 bg-[#75AFBC] text-white flex justify-between items-center">
-                                    <h3 className="text-xl font-bold flex items-center gap-2"><Package /> Yeni Ürün Ekle</h3>
-                                    <button onClick={() => setShowProductModal(false)}><X /></button>
-                                </div>
-                                <form onSubmit={handleAddProduct} className="p-8 grid grid-cols-2 gap-4">
-                                    <input required className="col-span-2 p-3 border-2 border-[#F7E9CE] rounded-xl outline-none focus:border-[#75AFBC]" placeholder="Ürün Adı" value={newProd.name} onChange={e => setNewProd({ ...newProd, name: e.target.value })} />
-                                    <select className="p-3 border-2 border-[#F7E9CE] rounded-xl outline-none" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: Number(e.target.value) })}>
-                                        {CATEGORIES.map((c, i) => <option key={i} value={i}>{c}</option>)}
-                                    </select>
-                                    <input required type="number" className="p-3 border-2 border-[#F7E9CE] rounded-xl outline-none" placeholder="Fiyat (₺)" value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} />
-                                    <input required type="number" className="p-3 border-2 border-[#F7E9CE] rounded-xl outline-none" placeholder="Stok Adedi" value={newProd.stock} onChange={e => setNewProd({ ...newProd, stock: e.target.value })} />
-                                    <input className="p-3 border-2 border-[#F7E9CE] rounded-xl outline-none" placeholder="Görsel URL" value={newProd.imageUrl} onChange={e => setNewProd({ ...newProd, imageUrl: e.target.value })} />
-                                    <textarea required className="col-span-2 p-3 border-2 border-[#F7E9CE] rounded-xl outline-none h-24 resize-none" placeholder="Ürün Açıklaması" value={newProd.description} onChange={e => setNewProd({ ...newProd, description: e.target.value })} />
-                                    <button className="col-span-2 bg-[#75AFBC] text-white py-4 rounded-xl font-black shadow-lg">KATALOĞA EKLE</button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* --- UZMAN EKLEME MODAL --- */}
-                    {showExpertModal && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                            <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl border-4 border-white animate-in slide-in-from-bottom-8">
-                                <div className="p-6 bg-[#A49EC2] text-white flex justify-between items-center">
-                                    <h3 className="text-xl font-bold flex items-center gap-2"><Users /> Yeni Uzman Ekle</h3>
-                                    <button onClick={() => setShowExpertModal(false)}><X /></button>
-                                </div>
-                                <form onSubmit={handleAddExpert} className="p-8 space-y-4">
-                                    <div className="flex items-center gap-2 p-3 border-2 border-[#F7E9CE] rounded-xl"><Users size={18} className="text-gray-400" /><input required className="flex-1 outline-none" placeholder="Ad Soyad" value={newExpert.name} onChange={e => setNewExpert({ ...newExpert, name: e.target.value })} /></div>
-                                    <div className="flex items-center gap-2 p-3 border-2 border-[#F7E9CE] rounded-xl"><Mail size={18} className="text-gray-400" /><input required type="email" className="flex-1 outline-none" placeholder="E-Posta" value={newExpert.email} onChange={e => setNewExpert({ ...newExpert, email: e.target.value })} /></div>
-                                    <div className="flex items-center gap-2 p-3 border-2 border-[#F7E9CE] rounded-xl"><Key size={18} className="text-gray-400" /><input required type="password" placeholder="Şifre" className="flex-1 outline-none" value={newExpert.password} onChange={e => setNewExpert({ ...newExpert, password: e.target.value })} /></div>
-                                    <div className="flex items-start gap-2 p-3 border-2 border-[#F7E9CE] rounded-xl"><Info size={18} className="text-gray-400 mt-1" /><textarea required className="flex-1 outline-none h-20 resize-none" placeholder="Uzmanlık Alanı / Bio" value={newExpert.info} onChange={e => setNewExpert({ ...newExpert, info: e.target.value })} /></div>
-                                    <button className="w-full bg-[#A49EC2] text-white py-4 rounded-xl font-black shadow-lg">UZMANI KAYDET</button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Sidebar */}
+                    {/* SIDEBAR */}
                     <div className="w-full md:w-64 bg-[#F7E9CE]/20 p-6 border-r border-[#F7E9CE] flex flex-col gap-2">
-                        <h2 className="text-xl font-black text-[#A49EC2] mb-6 flex items-center gap-2"><Lock size={20} /> ADMİN</h2>
-                        <button onClick={() => setActiveTab('stats')} className={`flex items-center gap-3 p-3 rounded-xl font-bold transition ${activeTab === 'stats' ? 'bg-[#A49EC2] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}><TrendingUp size={18} /> Raporlar</button>
-                        <button onClick={() => setActiveTab('products')} className={`flex items-center gap-3 p-3 rounded-xl font-bold transition ${activeTab === 'products' ? 'bg-[#A49EC2] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}><Package size={18} /> Ürünler</button>
-                        <button onClick={() => setActiveTab('experts')} className={`flex items-center gap-3 p-3 rounded-xl font-bold transition ${activeTab === 'experts' ? 'bg-[#A49EC2] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}><Star size={18} /> Uzmanlar</button>
-                        <button onClick={() => setActiveTab('users')} className={`flex items-center gap-3 p-3 rounded-xl font-bold transition ${activeTab === 'users' ? 'bg-[#A49EC2] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}><Users size={18} /> Kullanıcılar</button>
+                        <button onClick={() => setActiveTab('stats')} className={`flex items-center gap-3 p-3 rounded-xl font-bold ${activeTab === 'stats' ? 'bg-[#A49EC2] text-white' : 'text-gray-500'}`}><TrendingUp size={18} /> Raporlar</button>
+                        <button onClick={() => setActiveTab('products')} className={`flex items-center gap-3 p-3 rounded-xl font-bold ${activeTab === 'products' ? 'bg-[#A49EC2] text-white' : 'text-gray-500'}`}><Package size={18} /> Ürünler</button>
+                        <button onClick={() => setActiveTab('experts')} className={`flex items-center gap-3 p-3 rounded-xl font-bold ${activeTab === 'experts' ? 'bg-[#A49EC2] text-white' : 'text-gray-500'}`}><Star size={18} /> Uzmanlar</button>
+                        <button onClick={() => setActiveTab('users')} className={`flex items-center gap-3 p-3 rounded-xl font-bold ${activeTab === 'users' ? 'bg-[#A49EC2] text-white' : 'text-gray-500'}`}><Users size={18} /> Ebeveynler</button>
                     </div>
 
-                    {/* Main Content */}
+                    {/* MAIN CONTENT */}
                     <div className="flex-1 p-8 overflow-y-auto">
-                        {activeTab === 'stats' && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in">
-                                <div className="bg-[#75AFBC]/10 p-8 rounded-3xl border border-[#75AFBC]/20">
-                                    <p className="text-xs font-bold text-[#75AFBC] uppercase tracking-widest">Aylık Ciro</p>
-                                    <h3 className="text-4xl font-black text-gray-800">₺24.500</h3>
-                                </div>
-                                <div className="bg-[#FABDAD]/10 p-8 rounded-3xl border border-[#FABDAD]/20">
-                                    <p className="text-xs font-bold text-[#FABDAD] uppercase tracking-widest">Aktif Ebeveyn</p>
-                                    <h3 className="text-4xl font-black text-gray-800">{users.length}</h3>
-                                </div>
-                                <div className="bg-[#F7DCA1]/10 p-8 rounded-3xl border border-[#F7DCA1]/20">
-                                    <p className="text-xs font-bold text-[#F7DCA1] uppercase tracking-widest">Kritik Stok</p>
-                                    <h3 className="text-4xl font-black text-gray-800">{products.filter(p => p.stock < 5).length}</h3>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'products' && (
-                            <div className="space-y-6 animate-in slide-in-from-bottom-4">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="text-2xl font-bold text-gray-800">Stok & Ürün Yönetimi</h3>
-                                    <button onClick={() => setShowProductModal(true)} className="bg-[#75AFBC] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:scale-105 transition shadow-lg shadow-blue-100"><Plus /> Yeni Ürün Ekle</button>
-                                </div>
-                                <div className="bg-white rounded-3xl border border-[#F7E9CE] shadow-sm overflow-hidden text-sm">
-                                    <table className="w-full text-left">
-                                        <thead className="bg-gray-50 border-b">
-                                            <tr><th className="p-4">Ürün</th><th className="p-4">Kategori</th><th className="p-4">Stok</th><th className="p-4">İşlem</th></tr>
-                                        </thead>
-                                        <tbody>
-                                            {products.map(p => (
-                                                <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50 transition">
-                                                    <td className="p-4 flex items-center gap-3">
-                                                        <img src={p.imageUrl || getPlaceholderImage(p.category)} className="w-10 h-10 rounded-lg object-cover" />
-                                                        <div><p className="font-bold">{p.name}</p><p className="text-xs text-[#75AFBC] font-bold">₺{p.price}</p></div>
-                                                    </td>
-                                                    <td className="p-4"><span className="bg-[#F7E9CE]/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{CATEGORIES[p.category]}</span></td>
-                                                    <td className="p-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <button onClick={() => updateStock(p.id, -1)} className="w-8 h-8 bg-gray-100 rounded-lg hover:bg-red-50">-</button>
-                                                            <span className="font-bold w-6 text-center">{p.stock}</span>
-                                                            <button onClick={() => updateStock(p.id, 1)} className="w-8 h-8 bg-gray-100 rounded-lg hover:bg-green-50">+</button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4"><button onClick={() => setProducts(products.filter((pr: any) => pr.id !== p.id))} className="text-red-300 hover:text-red-500 transition-colors"><Trash2 size={20} /></button></td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'experts' && (
-                            <div className="space-y-6 animate-in fade-in">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="text-2xl font-bold text-gray-800">Uzman Aktivite Kontrolü</h3>
-                                    <button onClick={() => setShowExpertModal(true)} className="bg-[#A49EC2] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:scale-105 transition shadow-lg shadow-purple-100"><Plus /> Yeni Uzman Ekle</button>
-                                </div>
-                                <div className="grid gap-4">
-                                    {experts.map(exp => (
-                                        <div key={exp.id} className="bg-white border border-[#F7E9CE] p-6 rounded-3xl flex justify-between items-center shadow-sm hover:shadow-md transition">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-[#A49EC2] rounded-full flex items-center justify-center text-white font-bold text-xl">{exp.name.charAt(6)}</div>
-                                                <div>
-                                                    <p className="font-bold text-gray-800 text-lg">{exp.name}</p>
-                                                    <p className="text-xs text-[#A49EC2] font-bold italic">{exp.info}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-6 text-center border-l pl-6 items-center">
-                                                <div className="hidden sm:block"><p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Yazı</p><p className="font-black text-[#A49EC2]">{exp.articles}</p></div>
-                                                <div className="hidden sm:block"><p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Yanıt</p><p className="font-black text-[#75AFBC]">{exp.answers}</p></div>
-                                                <button onClick={() => setExperts(experts.filter(e => e.id !== exp.id))} className="p-3 text-red-300 hover:bg-red-50 rounded-xl transition"><Trash2 size={20} /></button>
-                                            </div>
+                        {loading ? <p className="text-center font-bold text-[#A49EC2]">Supabase'e bağlanılıyor...</p> : (
+                            <>
+                                {activeTab === 'stats' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in">
+                                        <div className="bg-[#75AFBC]/10 p-8 rounded-3xl border border-[#75AFBC]/20">
+                                            <p className="text-xs font-bold text-[#75AFBC]">TOPLAM ÜRÜN</p>
+                                            <h3 className="text-4xl font-black">{products.length}</h3>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'users' && (
-                            <div className="space-y-4 animate-in fade-in text-sm">
-                                <h3 className="text-2xl font-bold text-gray-800">Kullanıcı Yönetimi</h3>
-                                {users.map(u => (
-                                    <div key={u.id} className="flex justify-between items-center p-4 bg-white border border-[#F7E9CE] rounded-2xl shadow-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-[#F7E9CE] rounded-full flex items-center justify-center text-[#A49EC2] font-bold">{u.name.charAt(0)}</div>
-                                            <div><p className="font-bold text-gray-800">{u.name}</p><p className="text-xs text-gray-400">{u.email} • {u.date}</p></div>
+                                        <div className="bg-[#FABDAD]/10 p-8 rounded-3xl border border-[#FABDAD]/20">
+                                            <p className="text-xs font-bold text-[#FABDAD]">UZMAN SAYISI</p>
+                                            <h3 className="text-4xl font-black">{experts.length}</h3>
                                         </div>
-                                        <button onClick={() => setUsers(users.filter(us => us.id !== u.id))} className="text-red-300 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg"><Trash2 size={20} /></button>
+                                        <div className="bg-[#F7DCA1]/10 p-8 rounded-3xl border border-[#F7DCA1]/20">
+                                            <p className="text-xs font-bold text-[#F7DCA1]">EBEVEYN SAYISI</p>
+                                            <h3 className="text-4xl font-black">{parents.length}</h3>
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
+                                )}
+
+                                {activeTab === 'products' && (
+                                    <div className="space-y-6 animate-in slide-in-from-bottom-4">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-2xl font-bold text-gray-800">Ürün Yönetimi</h3>
+                                            <button onClick={() => setShowProductModal(true)} className="bg-[#75AFBC] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2"><Plus /> Ürün Ekle</button>
+                                        </div>
+                                        <div className="bg-white rounded-3xl border border-[#F7E9CE] overflow-hidden">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="bg-gray-50">
+                                                    <tr><th className="p-4">Ürün Adı</th><th className="p-4">Kategori</th><th className="p-4">Stok</th><th className="p-4">İşlem</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    {products.map(p => (
+                                                        <tr key={p.id} className="border-t">
+                                                            <td className="p-4 font-bold">{p.name}</td>
+                                                            <td className="p-4">{CATEGORIES[p.category]}</td>
+                                                            <td className="p-4">{p.stock} Adet</td>
+                                                            <td className="p-4"><button onClick={() => handleDeleteProduct(p.id)} className="text-red-300 hover:text-red-500"><Trash2 size={18} /></button></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'experts' && (
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-2xl font-bold">Uzman Kadromuz</h3>
+                                            <button onClick={() => setShowExpertModal(true)} className="bg-[#A49EC2] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2"><Plus /> Uzman Kaydet</button>
+                                        </div>
+                                        <div className="grid gap-4">
+                                            {experts.map(exp => {
+                                                const id = exp.id || (exp as any).Id;
+                                                const name = exp.name || (exp as any).Name;
+                                                const email = exp.email || (exp as any).Email;
+                                                return (
+                                                    <div key={id} className="bg-white border border-[#F7E9CE] p-4 rounded-2xl flex justify-between items-center shadow-sm hover:shadow-md transition">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 bg-[#A49EC2] text-white rounded-full flex items-center justify-center font-bold">{name?.charAt(0)}</div>
+                                                            <div><p className="font-bold text-gray-800">{name}</p><p className="text-xs text-gray-400">{email}</p></div>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex items-center gap-2 text-green-500 font-bold text-xs"><CheckCircle2 size={14} /> AKTİF</div>
+                                                            <button onClick={() => handleDeleteUser(id, "Uzman")} className="p-2 text-red-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition"><Trash2 size={20} /></button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'users' && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-2xl font-bold">Kayıtlı Ebeveynler</h3>
+                                        {parents.map(u => {
+                                            const id = u.id || (u as any).Id;
+                                            const name = u.name || (u as any).Name;
+                                            const email = u.email || (u as any).Email;
+                                            return (
+                                                <div key={id} className="flex justify-between items-center p-4 bg-white border border-[#F7E9CE] rounded-2xl shadow-sm hover:shadow-md transition">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-[#FABDAD] text-white rounded-full flex items-center justify-center font-bold">{name?.charAt(0)}</div>
+                                                        <div><p className="font-bold">{name}</p><p className="text-xs text-gray-400">{email}</p></div>
+                                                    </div>
+                                                    <button onClick={() => handleDeleteUser(id, "Ebeveyn")} className="text-red-300 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition"><Trash2 size={18} /></button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* ÜRÜN EKLEME MODAL */}
+            {showProductModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-xl rounded-[2rem] p-8 shadow-2xl">
+                        <h3 className="text-2xl font-black text-gray-800 mb-6">Yeni Ürün Tanımla</h3>
+                        <form onSubmit={handleAddProduct} className="grid grid-cols-2 gap-4">
+                            <input required className="col-span-2 p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Ürün Adı" value={newProd.name} onChange={e => setNewProd({ ...newProd, name: e.target.value })} />
+                            <select className="p-3 border-2 border-gray-100 rounded-xl outline-none" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: Number(e.target.value) })}>
+                                {CATEGORIES.map((c, i) => <option key={i} value={i}>{c}</option>)}
+                            </select>
+                            <input required type="number" className="p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Fiyat (₺)" value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} />
+                            <input required type="number" className="p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Stok" value={newProd.stock} onChange={e => setNewProd({ ...newProd, stock: e.target.value })} />
+                            <textarea required className="col-span-2 p-3 border-2 border-gray-100 rounded-xl h-24 outline-none resize-none" placeholder="Açıklama" value={newProd.description} onChange={e => setNewProd({ ...newProd, description: e.target.value })} />
+                            <button className="col-span-2 bg-[#75AFBC] text-white py-4 rounded-xl font-black shadow-lg">DATABASE'E EKLE</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* UZMAN EKLEME MODAL */}
+            {showExpertModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl">
+                        <h3 className="text-2xl font-black text-gray-800 mb-6">Yeni Uzman Kaydı</h3>
+                        <form onSubmit={handleAddExpert} className="space-y-4">
+                            <input required className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Ad Soyad" value={newExpert.name} onChange={e => setNewExpert({ ...newExpert, name: e.target.value })} />
+                            <input required type="email" className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="E-posta" value={newExpert.email} onChange={e => setNewExpert({ ...newExpert, email: e.target.value })} />
+                            <input required type="password" className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none" placeholder="Şifre" value={newExpert.password} onChange={e => setNewExpert({ ...newExpert, password: e.target.value })} />
+                            <button className="w-full bg-[#A49EC2] text-white py-4 rounded-xl font-black shadow-lg">UZMANI SİSTEME EKLE</button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

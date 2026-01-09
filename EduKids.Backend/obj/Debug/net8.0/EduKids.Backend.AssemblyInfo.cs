@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EduKids.Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ddd65b203a3eec739b535684b220db10925b73a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+10774e30f8d4e32865b3b82dfc4119d13a61ad4e")]
 [assembly: System.Reflection.AssemblyProductAttribute("EduKids.Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EduKids.Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -39,7 +39,11 @@ namespace EduKids.Models
         [JsonIgnore]
         public ICollection<Appointment>? AppointmentsAsParent { get; set; }
         public ICollection<BlogPost>? BlogPosts { get; set; }
+
+        // --- GÜNCELLENEN KISIM: MESAJ LİSTELERİ ---
+        [JsonIgnore] // Döngüsel hatayı önlemek için
         public ICollection<Message>? SentMessages { get; set; }
+        [JsonIgnore]
         public ICollection<Message>? ReceivedMessages { get; set; }
     }
 
@@ -164,30 +168,22 @@ namespace EduKids.Models
         public string AvailableTime { get; set; } = string.Empty;
     }
 
-    public class BlogPost
-    {
-        [Key]
-        public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Content { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
-        public string? ImageUrl { get; set; }
-        public int Views { get; set; } = 0;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public BlogPostStatus Status { get; set; } = BlogPostStatus.Draft;
-
-        [ForeignKey("User")]
-        public int AuthorId { get; set; }
-        [JsonIgnore]
-        public User? Author { get; set; }
-    }
-
+    // --- GÜNCELLENEN KISIM: MESSAGE SINIFI ---
     public class Message
     {
         [Key]
         public int Id { get; set; }
+
+        [ForeignKey("Sender")]
         public int SenderId { get; set; }
+        [JsonIgnore]
+        public User? Sender { get; set; } // Navigation Property
+
+        [ForeignKey("Receiver")]
         public int ReceiverId { get; set; }
+        [JsonIgnore]
+        public User? Receiver { get; set; } // Navigation Property
+
         public string Content { get; set; } = string.Empty;
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
         public bool IsRead { get; set; } = false;

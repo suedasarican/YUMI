@@ -25,49 +25,6 @@ namespace EduKids.Controllers
         }
     }
 
-    // 1. ADMIN CONTROLLER
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AdminController : ControllerBase
-    {
-        private readonly AppDbContext _context;
-        public AdminController(AppDbContext context) { _context = context; }
-
-        [HttpPost("products")]
-        public IActionResult CreateProduct([FromBody] Product product)
-        {
-            _context.Products.Add(product);
-            _context.SaveChanges();
-            return Ok(product);
-        }
-
-        [HttpDelete("products/{id}")]
-        public IActionResult DeleteProduct(int id)
-        {
-            var product = _context.Products.Find(id);
-            if (product == null) return NotFound();
-            _context.Products.Remove(product);
-            _context.SaveChanges();
-            return Ok(new { message = "Silindi" });
-        }
-
-        [HttpGet("experts/pending")]
-        public IActionResult GetPendingExperts()
-        {
-            return Ok(_context.Users.Where(u => u.Role == UserRole.Expert && !u.IsActive).ToList());
-        }
-
-        [HttpPost("experts/approve/{id}")]
-        public IActionResult ApproveExpert(int id)
-        {
-            var expert = _context.Users.Find(id);
-            if (expert == null) return NotFound();
-            expert.IsActive = true;
-            _context.SaveChanges();
-            return Ok(new { message = "Onaylandı" });
-        }
-    }
-
     // 2. PARENT CONTROLLER
     [ApiController]
     [Route("api/[controller]")]

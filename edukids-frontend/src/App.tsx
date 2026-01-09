@@ -3,7 +3,9 @@ import {
     ShoppingCart, Plus, LogOut, X, Trash2,
     Filter, LayoutDashboard, Star, Menu, CheckCircle2, ChevronDown, BookOpen,
     ArrowRight, ShieldCheck, Heart, Sparkles, User, Briefcase, Rocket, TrendingUp,
-    ChevronLeft, ChevronRight, Lock, Eye, Calendar, Stethoscope
+    ChevronLeft, ChevronRight, Lock, Eye, Calendar, Stethoscope,
+    // --- EKSİK OLANLAR EKLENDİ ---
+    CalendarCheck, Search, Instagram, Twitter, Facebook, Clock, FileText, MessageCircle
 } from 'lucide-react';
 
 // --- DIŞARI AKTARILAN PANELLER ---
@@ -153,30 +155,55 @@ const LoginScreen = ({ onLogin, onAdminClick }: { onLogin: (user: UserType) => v
 };
 
 // --- LANDING PAGE ---
+// --- GÜNCELLENMİŞ LANDING PAGE (ESKİ TASARIM + YENİ BLOG) ---
 const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => void, products: Product[] }) => {
+    // 1. STATE VE TANIMLAR
     const showcaseProducts = products.slice(0, 3);
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [blogs, setBlogs] = useState<any[]>([]);
+    const [selectedBlog, setSelectedBlog] = useState<any | null>(null); // Blog okuma modu için
 
+    // SENİN İSTEDİĞİN SLIDER VERİLERİ
     const HERO_SLIDES = [
         { id: 1, title: "Hayal Gücünün Sınırı Yok!", subtitle: "YENİ SEZON", desc: "YUMI ile çocuklarınızın gelişimine katkıda bulunurken pedagog onaylı güvenli eğlencenin tadını çıkarın.", bgGradient: "from-[#FF9A9E] to-[#FECFEF]", badgeColor: "text-yellow-300", buttonColor: "text-[#A49EC2]", image: "https://images.unsplash.com/photo-1596464716127-f9a8625579c3?w=600&q=80" },
         { id: 2, title: "Minik Eller Büyük İşler!", subtitle: "MOTOR BECERİLER", desc: "İnce motor becerilerini geliştiren özel setlerle çocuğunuzun el-göz koordinasyonunu destekleyin.", bgGradient: "from-blue-200 to-cyan-100", badgeColor: "text-blue-500", buttonColor: "text-blue-500", image: "https://images.unsplash.com/photo-1515488042361-25f4682f0877?w=600&q=80" },
         { id: 3, title: "Doğayı Keşfetme Zamanı", subtitle: "BİLİM & DOĞA", desc: "Meraklı kaşifler için hazırlanan doğa dostu oyuncaklarla dünyayı öğrenin.", bgGradient: "from-green-200 to-emerald-100", badgeColor: "text-green-600", buttonColor: "text-green-600", image: "https://images.unsplash.com/photo-1535378437327-b71494669e9d?w=600&q=80" }
     ];
 
+    // 2. VERİ ÇEKME VE SLIDER MANTIĞI
     useEffect(() => {
-        const timer = setInterval(() => { setCurrentSlide((prev) => (prev === HERO_SLIDES.length - 1 ? 0 : prev + 1)); }, 5000);
+        fetch(`${API_BASE}/blog`)
+            .then(res => res.json())
+            .then(data => {
+                // Sadece 'published' olanları al
+                const publishedBlogs = data.filter((b: any) => b.status?.toLowerCase() === 'published');
+                setBlogs(publishedBlogs);
+            })
+            .catch(err => console.error("Bloglar çekilemedi", err));
+    }, []);
+
+    // Otomatik Kaydırma (Opsiyonel: İstersen kaldırabilirsin)
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide((prev) => (prev === HERO_SLIDES.length - 1 ? 0 : prev + 1));
+        }, 6000);
         return () => clearInterval(timer);
-    }, [HERO_SLIDES.length]);
+    }, []);
 
     const nextSlide = () => setCurrentSlide((prev) => (prev === HERO_SLIDES.length - 1 ? 0 : prev + 1));
     const prevSlide = () => setCurrentSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1));
 
     return (
-        <div className="flex flex-col gap-16 pb-16">
-            <div className={`relative z-10 bg-gradient-to-r ${HERO_SLIDES[currentSlide].bgGradient} rounded-[2.5rem] p-8 md:p-12 border border-white shadow-sm overflow-hidden transition-all duration-700 ease-in-out`}>
+        <div className="flex flex-col gap-16 pb-16 relative">
+
+            {/* --- BÖLÜM 1: SENİN SLIDER TASARIMIN --- */}
+            <div className={`relative z-10 bg-gradient-to-r ${HERO_SLIDES[currentSlide].bgGradient} rounded-[2.5rem] p-8 md:p-12 border border-white shadow-sm overflow-hidden transition-all duration-700 ease-in-out group`}>
                 <div className="absolute top-0 right-0 w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 p-2 rounded-full text-white backdrop-blur-sm transition z-20"><ChevronLeft size={24} /></button>
-                <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 p-2 rounded-full text-white backdrop-blur-sm transition z-20"><ChevronRight size={24} /></button>
+
+                {/* Oklar */}
+                <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 p-2 rounded-full text-white backdrop-blur-sm transition z-20 opacity-0 group-hover:opacity-100"><ChevronLeft size={24} /></button>
+                <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/50 p-2 rounded-full text-white backdrop-blur-sm transition z-20 opacity-0 group-hover:opacity-100"><ChevronRight size={24} /></button>
+
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-12 min-h-[320px]">
                     <div className="flex-1 space-y-6 animate-in slide-in-from-left duration-500" key={currentSlide}>
                         <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-white/40">
@@ -201,8 +228,14 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                     ))}
                 </div>
             </div>
+
+            {/* --- BÖLÜM 2: SENİN ÖZELLİK KARTLARIN --- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[{ icon: ShieldCheck, color: "text-[#75AFBC]", bg: "bg-[#75AFBC]/10", title: "Uzman Onaylı", desc: "Her ürün pedagoglarımız tarafından gelişim kriterlerine göre incelenir." }, { icon: Heart, color: "text-[#FABDAD]", bg: "bg-[#FABDAD]/10", title: "Güvenli İçerik", desc: "Çocuk sağlığına zararlı hiçbir materyal içermeyen, sertifikalı ürünler." }, { icon: BookOpen, color: "text-[#A49EC2]", bg: "bg-[#A49EC2]/10", title: "Gelişim Rehberi", desc: "Hangi oyuncağın hangi yaşta hangi beceriyi desteklediğini öğrenin." }].map((item, idx) => (
+                {[
+                    { icon: ShieldCheck, color: "text-[#75AFBC]", bg: "bg-[#75AFBC]/10", title: "Uzman Onaylı", desc: "Her ürün pedagoglarımız tarafından gelişim kriterlerine göre incelenir." },
+                    { icon: Heart, color: "text-[#FABDAD]", bg: "bg-[#FABDAD]/10", title: "Güvenli İçerik", desc: "Çocuk sağlığına zararlı hiçbir materyal içermeyen, sertifikalı ürünler." },
+                    { icon: BookOpen, color: "text-[#A49EC2]", bg: "bg-[#A49EC2]/10", title: "Gelişim Rehberi", desc: "Hangi oyuncağın hangi yaşta hangi beceriyi desteklediğini öğrenin." }
+                ].map((item, idx) => (
                     <div key={idx} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center text-center hover:shadow-md transition duration-300">
                         <div className={`${item.bg} ${item.color} w-16 h-16 rounded-2xl flex items-center justify-center mb-4`}><item.icon size={32} /></div>
                         <h3 className="font-bold text-gray-800 text-lg mb-2">{item.title}</h3>
@@ -210,6 +243,8 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                     </div>
                 ))}
             </div>
+
+            {/* --- BÖLÜM 3: ÇOK SATANLAR (SENİN KODUN) --- */}
             <div>
                 <div className="flex justify-between items-end mb-8">
                     <div><h2 className="text-3xl font-bold text-gray-800">Çok Satanlar</h2><p className="text-gray-500 mt-1">Annelerin en çok tercih ettiği gelişim setleri.</p></div>
@@ -219,7 +254,7 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                     {showcaseProducts.map(product => (
                         <div key={product.id} className="bg-white rounded-[2rem] border border-gray-100 p-4 hover:shadow-xl transition duration-300 group cursor-pointer" onClick={onStartShopping}>
                             <div className="h-64 relative rounded-2xl overflow-hidden bg-gray-50 mb-4">
-                                <img src={getPlaceholderImage(product.category)} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                                <img src={product.imageUrl || "https://images.unsplash.com/photo-1596464716127-f9a0859d0437?w=500&q=80"} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
                                 {product.isExpertApproved && <div className="absolute top-3 right-3 bg-[#F7DCA1] text-yellow-900 text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-md"><CheckCircle2 size={12} fill="currentColor" className="text-white" /> Uzman Onaylı</div>}
                             </div>
                             <div className="px-2 pb-2">
@@ -230,10 +265,113 @@ const LandingPage = ({ onStartShopping, products }: { onStartShopping: () => voi
                     ))}
                 </div>
             </div>
+
+            {/* --- BÖLÜM 4: BLOG / UZMAN KÖŞESİ (YENİ EKLENTİ) --- */}
+            <div className="animate-in slide-in-from-bottom-8 duration-700 pt-8 border-t border-gray-100">
+                <div className="flex justify-between items-end mb-8">
+                    <div>
+                        <h2 className="text-3xl font-black text-gray-800">Uzman Köşesi</h2>
+                        <p className="text-gray-500 mt-1 font-medium">Pedagoglarımızdan gelişim önerileri ve makaleler.</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {blogs.length === 0 ? (
+                        <div className="col-span-3 text-center py-12 bg-white rounded-[2rem] border border-dashed border-gray-200">
+                            <BookOpen size={48} className="mx-auto text-gray-300 mb-4" />
+                            <p className="text-gray-400 font-bold">Henüz yayınlanmış bir yazı yok.</p>
+                            <p className="text-xs text-gray-400 mt-1">Uzmanlarımız içerik hazırlıyor...</p>
+                        </div>
+                    ) : (
+                        blogs.slice(0, 3).map((blog) => (
+                            <div
+                                key={blog.id}
+                                onClick={() => setSelectedBlog(blog)}
+                                className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-2 transition duration-300 group cursor-pointer h-full flex flex-col"
+                            >
+                                <div className="h-48 overflow-hidden relative">
+                                    <img
+                                        src={blog.imageUrl || "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=500&q=80"}
+                                        alt={blog.title}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                                    />
+                                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-600 shadow-sm uppercase tracking-wider">
+                                        {blog.category || "Gelişim"}
+                                    </div>
+                                </div>
+                                <div className="p-8 flex flex-col flex-1">
+                                    <h3 className="font-bold text-gray-800 text-xl mb-3 line-clamp-2 group-hover:text-[#75AFBC] transition">
+                                        {blog.title}
+                                    </h3>
+                                    <p className="text-gray-500 text-sm line-clamp-3 mb-6 leading-relaxed flex-1">
+                                        {blog.content}
+                                    </p>
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden border border-white shadow-sm">
+                                                {blog.author?.imageUrl ?
+                                                    <img src={blog.author.imageUrl} className="w-full h-full object-cover" /> :
+                                                    <div className="w-full h-full flex items-center justify-center bg-[#75AFBC] text-white font-bold text-xs">
+                                                        {blog.author?.name?.charAt(0) || "U"}
+                                                    </div>
+                                                }
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-600">{blog.author?.name || "Uzman"}</span>
+                                        </div>
+                                        <span className="text-xs text-gray-400 font-bold">{new Date(blog.createdAt).toLocaleDateString('tr-TR')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* --- BÖLÜM 5: BLOG OKUMA MODALI (POP-UP) --- */}
+            {selectedBlog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setSelectedBlog(null)}></div>
+                    <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10 flex flex-col animate-in fade-in zoom-in duration-300">
+                        <button onClick={() => setSelectedBlog(null)} className="absolute top-6 right-6 bg-white/50 hover:bg-white p-2 rounded-full backdrop-blur-md transition shadow-sm z-20 group">
+                            <X size={24} className="text-gray-800 group-hover:scale-110 transition" />
+                        </button>
+                        <div className="h-64 md:h-80 w-full relative flex-shrink-0">
+                            <img src={selectedBlog.imageUrl || "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=500&q=80"} className="w-full h-full object-cover" alt={selectedBlog.title} />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                            <div className="absolute bottom-6 left-6 md:left-10 text-white">
+                                <span className="bg-[#75AFBC] text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider mb-2 inline-block shadow-lg">{selectedBlog.category || "Genel"}</span>
+                                <h2 className="text-3xl md:text-4xl font-black leading-tight shadow-sm">{selectedBlog.title}</h2>
+                            </div>
+                        </div>
+                        <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar">
+                            <div className="flex items-center justify-between mb-8 pb-8 border-b border-gray-100">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-gray-100 border-2 border-white shadow-md overflow-hidden">
+                                        {selectedBlog.author?.imageUrl ? <img src={selectedBlog.author.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-[#A49EC2] text-white font-bold text-lg">{selectedBlog.author?.name?.charAt(0)}</div>}
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-gray-800 text-lg">{selectedBlog.author?.name || "Misafir Uzman"}</div>
+                                        <div className="text-xs text-[#75AFBC] font-bold">{selectedBlog.author?.title || "Pedagog / Uzman"}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-sm font-bold text-gray-400">{new Date(selectedBlog.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                                    <div className="text-xs text-gray-300 font-bold flex items-center justify-end gap-1 mt-1"><Eye size={12} /> {selectedBlog.views || 0} Okunma</div>
+                                </div>
+                            </div>
+                            <div className="prose prose-lg max-w-none text-gray-600 leading-relaxed whitespace-pre-line">
+                                {selectedBlog.content}
+                            </div>
+                            <div className="mt-12 pt-8 border-t border-gray-100 flex justify-center">
+                                <button onClick={() => setSelectedBlog(null)} className="px-8 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition">Kapat</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
-
 // --- SHOP PAGE ---
 const ShopPage = ({ products, onAddToCartClick }: any) => {
     return (
@@ -381,28 +519,36 @@ const BookingModal = ({ expert, isOpen, onClose, user }: { expert: ExpertProfile
 };
 
 // --- EBEVEYN PANELİ ---
+// --- GÜNCELLENMİŞ EBEVEYN PANELİ ---
+// --- GÜNCELLENMİŞ EBEVEYN PANELİ (TAM HALİ) ---
 const ParentPanel = ({ products, user, onAddToCart }: any) => {
-    const [activeTab, setActiveTab] = useState<'home' | 'shop' | 'experts'>('home');
+    // 1. STATE TANIMLARI
+    // 'sessions' sekmesini buraya ekledik
+    const [activeTab, setActiveTab] = useState<'home' | 'shop' | 'experts' | 'sessions'>('home');
     const [experts, setExperts] = useState<ExpertProfile[]>([]);
+    const [mySessions, setMySessions] = useState<any[]>([]); // Randevuları tutacak kutu
     const [selectedExpert, setSelectedExpert] = useState<ExpertProfile | null>(null);
     const [showBookingModal, setShowBookingModal] = useState(false);
 
+    // 2. VERİ ÇEKME İŞLEMLERİ (useEffect)
     useEffect(() => {
+        // Uzmanları çek
         if (activeTab === 'experts') {
-            const fetchExperts = async () => {
-                try {
-                    const response = await fetch(`${API_BASE}/users/experts`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        setExperts(data);
-                    }
-                } catch (error) {
-                    console.error("Uzmanlar çekilemedi:", error);
-                }
-            };
-            fetchExperts();
+            fetch(`${API_BASE}/users/experts`)
+                .then(res => res.json())
+                .then(data => setExperts(data))
+                .catch(err => console.error(err));
         }
-    }, [activeTab]);
+
+        // YENİ: Seanslarımı Çek (Backend'den)
+        if (activeTab === 'sessions') {
+            // Backend'de AppointmentsController'da parentId ile filtreleme yazmıştık
+            fetch(`${API_BASE}/appointments?parentId=${user.id}`)
+                .then(res => res.json())
+                .then(data => setMySessions(data))
+                .catch(err => console.error("Randevular çekilemedi:", err));
+        }
+    }, [activeTab, user.id]);
 
     const handleGoToShop = () => {
         setActiveTab('shop');
@@ -414,64 +560,76 @@ const ParentPanel = ({ products, user, onAddToCart }: any) => {
         setShowBookingModal(true);
     };
 
+    // 3. GÖRÜNÜM (JSX) - Senin attığın kısım burası
     return (
         <div>
-            {/* Navigasyon (Aynı) */}
-            <div className="flex justify-center mb-8 sticky top-24 z-20">
-                <div className="bg-white/90 backdrop-blur p-1.5 rounded-2xl shadow-sm border border-white inline-flex gap-2">
-                    <button onClick={() => setActiveTab('home')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'home' ? 'bg-[#F7DCA1] text-yellow-900 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><Star size={16} /> Vitrin</button>
-                    <button onClick={() => setActiveTab('shop')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'shop' ? 'bg-[#A49EC2] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><ShoppingCart size={16} /> Mağaza</button>
-                    <button onClick={() => setActiveTab('experts')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'experts' ? 'bg-[#75AFBC] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><Stethoscope size={16} /> Danışmanlar</button>
+            {/* --- MENÜ (Navigasyon) --- */}
+            <div className="flex justify-center mb-8 sticky top-24 z-20 overflow-x-auto py-2">
+                <div className="bg-white/90 backdrop-blur p-1.5 rounded-2xl shadow-sm border border-white inline-flex gap-2 min-w-max">
+                    <button onClick={() => setActiveTab('home')} className={`px-4 md:px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'home' ? 'bg-[#F7DCA1] text-yellow-900 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><Star size={16} /> Vitrin</button>
+                    <button onClick={() => setActiveTab('shop')} className={`px-4 md:px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'shop' ? 'bg-[#A49EC2] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><ShoppingCart size={16} /> Mağaza</button>
+                    <button onClick={() => setActiveTab('experts')} className={`px-4 md:px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'experts' ? 'bg-[#75AFBC] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><Stethoscope size={16} /> Danışmanlar</button>
+                    {/* YENİ BUTON */}
+                    <button onClick={() => setActiveTab('sessions')} className={`px-4 md:px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${activeTab === 'sessions' ? 'bg-orange-400 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><Calendar size={16} /> Seanslarım</button>
                 </div>
             </div>
 
+            {/* MEVCUT SAYFALAR */}
             {activeTab === 'home' && <LandingPage onStartShopping={handleGoToShop} products={products} />}
             {activeTab === 'shop' && <ShopPage products={products} onAddToCartClick={onAddToCart} />}
 
-            {/* DANIŞMANLAR TABI (Düzeltilmiş Hali) */}
+            {/* UZMANLAR SAYFASI */}
             {activeTab === 'experts' && (
-                <div className="space-y-8 animate-in slide-in-from-right-4 pb-12">
-                    <div className="text-center max-w-2xl mx-auto">
-                        <h2 className="text-3xl font-black text-gray-800 mb-2">Uzman Kadromuz</h2>
-                        <p className="text-gray-500">Çocuğunuzun gelişimi için doğru uzmanla tanışın ve seans oluşturun.</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {experts.length === 0 ? (
-                            <div className="col-span-full text-center p-10 bg-white rounded-3xl border border-dashed border-gray-300 text-gray-400">
-                                Henüz kayıtlı uzman bulunmamaktadır.
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4 pb-12">
+                    {experts.map(expert => (
+                        <div key={expert.id} className="bg-white p-6 rounded-[2rem] border border-white shadow-sm hover:shadow-lg transition flex flex-col md:flex-row gap-6 items-center">
+                            <img src={expert.imageUrl || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&q=80"} className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md" />
+                            <div className="flex-1 text-center md:text-left">
+                                <h3 className="text-xl font-black text-gray-800">{expert.name}</h3>
+                                <p className="text-[#75AFBC] font-bold text-sm mb-2">{expert.title || "Uzman"}</p>
+                                <button onClick={() => handleBookSession(expert)} className="w-full bg-[#A49EC2] text-white py-2 rounded-xl font-bold text-sm hover:opacity-90 shadow-lg shadow-purple-100 flex items-center justify-center gap-2">
+                                    <Calendar size={16} /> Randevu Al
+                                </button>
                             </div>
-                        ) : (
-                            experts.map(expert => (
-                                <div key={expert.id} className="bg-white p-6 rounded-[2rem] border border-white shadow-sm hover:shadow-lg transition flex flex-col md:flex-row gap-6 items-center md:items-start relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-[#F7E9CE]/50 to-transparent -z-0"></div>
-                                    <div className="relative z-10 w-32 h-32 flex-shrink-0">
-                                        {/* Resim Yoksa Varsayılan Resim Göster */}
-                                        <img
-                                            src={expert.imageUrl || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&q=80"}
-                                            className="w-full h-full rounded-full object-cover border-4 border-white shadow-md"
-                                        />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* --- YENİ: SEANSLARIM EKRANI --- */}
+            {activeTab === 'sessions' && (
+                <div className="animate-in slide-in-from-bottom-4 space-y-6 pb-12">
+                    <h2 className="text-2xl font-black text-gray-800 text-center">Seanslarım</h2>
+                    {mySessions.length === 0 ? (
+                        <div className="text-center p-10 bg-white rounded-3xl border border-dashed border-gray-300 text-gray-400">
+                            Henüz alınmış bir randevunuz yok. "Danışmanlar" sekmesinden randevu alabilirsiniz.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {mySessions.map((session: any) => (
+                                <div key={session.id} className="bg-white p-6 rounded-3xl border border-orange-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-orange-400"></div>
+                                    <div className="bg-orange-50 p-4 rounded-2xl text-orange-500">
+                                        <CalendarCheck size={32} />
                                     </div>
-                                    <div className="relative z-10 flex-1 text-center md:text-left">
-                                        <h3 className="text-xl font-black text-gray-800">{expert.name}</h3>
-                                        {/* Title ve Bio Yoksa Varsayılan Yazı Göster */}
-                                        <p className="text-[#75AFBC] font-bold text-sm mb-2">{expert.title || "Çocuk Gelişim Uzmanı"}</p>
-                                        <p className="text-gray-500 text-sm mb-4 line-clamp-2">{expert.bio || "Bu uzman henüz biyografi eklememiş."}</p>
-
-                                        {/* Expertise Yoksa Patlamasın Diye Kontrol ( ? ) Ekledik */}
-                                        <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-6">
-                                            {(expert.expertise || ["Genel Danışmanlık"]).map((exp, i) => (
-                                                <span key={i} className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wide">{exp}</span>
-                                            ))}
+                                    <div>
+                                        <div className="text-sm font-bold text-gray-400 uppercase tracking-wide">
+                                            {new Date(session.date).toLocaleDateString('tr-TR')} - {session.time}
                                         </div>
-
-                                        <button onClick={() => handleBookSession(expert)} className="w-full bg-[#A49EC2] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 shadow-lg shadow-purple-100 flex items-center justify-center gap-2">
-                                            <Calendar size={16} /> Randevu Al
-                                        </button>
+                                        <h3 className="font-bold text-gray-800 text-lg mb-1">
+                                            Konu: {session.topic}
+                                        </h3>
+                                        <div className="text-sm text-gray-600">
+                                            Çocuk: <strong>{session.childName}</strong> ({session.childAge} Yaş)
+                                        </div>
+                                        <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                                            Onaylandı
+                                        </span>
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

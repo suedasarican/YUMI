@@ -46,25 +46,41 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
     const [inspectingProduct, setInspectingProduct] = useState<Product | null>(null);
 
     // --- API VERİ ÇEKME ---
+    // --- API VERİ ÇEKME ---
+    // --- API VERİ ÇEKME ---
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Randevuları Çek (Yorum satırlarını kaldırdık)
+                // 1. Randevuları Çek
                 const resApp = await fetch(`${API_BASE}/appointments?expertId=${user.id}`);
                 if (resApp.ok) {
-                    const data = await resApp.json();
-                    // Backend'den gelen veri ile Frontend tipi uyuşmazsa burada map işlemi gerekebilir
-                    // Şimdilik direkt set ediyoruz.
-                    setAppointments(data);
+                    setAppointments(await resApp.json());
                 }
 
-                // (Sorular ve Bloglar için de benzer endpointler yazılınca burası açılacak)
+                // 2. Müsaitlik Saatlerini Çek (BU EKSİKTİ!)
+                const resSlots = await fetch(`${API_BASE}/ExpertAvailability/${user.id}`);
+                if (resSlots.ok) {
+                    setAvailableSlots(await resSlots.json());
+                }
+
+                // 3. Blogları Çek
+                const resBlog = await fetch(`${API_BASE}/blog/expert/${user.id}`);
+                if (resBlog.ok) {
+                    setBlogPosts(await resBlog.json());
+                }
+
+                // 4. Soruları Çek (İleride lazım olacak)
+                // const resQuestions = ...
 
             } catch (error) {
                 console.error("Veri çekme hatası:", error);
             }
         };
-        fetchData();
+
+        // Sadece user.id değiştiğinde veya sayfa ilk açıldığında çalışır
+        if (user && user.id) {
+            fetchData();
+        }
     }, [user.id]);
 
     // --- TAKVİM FONKSİYONLARI ---
@@ -82,22 +98,21 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
     const handleDateClick = (day: number) => {
         const d = new Date(currentDate);
         d.setDate(day);
-        // Tarih formatı: YYYY-MM-DD (Backend ile uyumlu olması için)
         const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
         setSelectedDate(formattedDate);
 
-        // --- GÜNCELLEME BURADA ---
-        // Veritabanından (availableSlots state'inden) bu tarihteki saatleri buluyoruz
+        // --- DÜZELTME BURADA ---
         const existingSlotsForDate = availableSlots
             .filter(slot => {
-                // Backend'den gelen tarih "2026-01-12T00:00:00" formatında olabilir, sadece ilk 10 karaktere (YYYY-MM-DD) bakıyoruz
-                const slotDateStr = String(slot.availableDate).split('T')[0];
+                // Hem "T" harfini hem de " " (boşluk) karakterini temizliyoruz.
+                // Veritabanı "2026-01-11 00:00:00" gönderse bile biz sadece "2026-01-11" kısmını alırız.
+                const rawDate = slot.availableDate || slot.AvailableDate || "";
+                const slotDateStr = String(rawDate).split('T')[0].split(' ')[0];
                 return slotDateStr === formattedDate;
             })
-            .map(slot => slot.availableTime);
+            .map(slot => slot.availableTime || slot.AvailableTime);
 
-        // O günün kayıtlı saatlerini seçili hale getiriyoruz
         setSelectedTimes(existingSlotsForDate);
     };
 
@@ -206,23 +221,63 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
 
     const handleCancelEdit = () => { setEditingId(null); setPostForm({ title: '', category: 'Gelişim', content: '', imageUrl: '', relatedProductIds: [] }); };
 
-    const handleSavePost = (status: 'draft' | 'published') => {
+    const handleSavePost = async (status: 'draft' | 'published') => {
+        console.log("Gönderilecek Blog Verisi:", { ...postForm, status, authorId: user.id }); // <-- BUNU EKLE
         if (!postForm.title || !postForm.content) return alert("Başlık ve içerik zorunludur.");
 
-        if (editingId) {
-            const updatedPosts = blogPosts.map(post => post.id === editingId ? { ...post, ...postForm, status: status } : post);
-            setBlogPosts(updatedPosts);
-            alert("Yazı güncellendi!");
-        } else {
-            const newPost: BlogPost = { id: Date.now(), ...postForm, status: status, views: 0, date: new Date().toLocaleDateString('tr-TR'), relatedProductIds: postForm.relatedProductIds };
-            setBlogPosts([newPost, ...blogPosts]);
-            alert("Yazı eklendi!");
+        const payload = {
+            ...postForm,
+            status: status,
+            authorId: user.id, // Yazarı belirtiyoruz
+            // id: editingId (Eğer düzenleme ise aşağıda ekleyeceğiz)
+        };
+
+        try {
+            let response;
+            if (editingId) {
+                // GÜNCELLEME (PUT)
+                response = await fetch(`${API_BASE}/blog/${editingId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...payload, id: editingId })
+                });
+            } else {
+                // YENİ EKLEME (POST)
+                response = await fetch(`${API_BASE}/blog`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (response.ok) {
+                alert(`Yazı başarıyla ${editingId ? 'güncellendi' : 'yayınlandı'}!`);
+                handleCancelEdit(); // Formu temizle
+
+                // Listeyi Yenile
+                const res = await fetch(`${API_BASE}/blog/expert/${user.id}`);
+                if (res.ok) setBlogPosts(await res.json());
+            } else {
+                alert("Kaydederken bir hata oluştu.");
+            }
+        } catch (error) {
+            console.error("Blog kaydetme hatası:", error);
         }
-        // API Call here...
-        handleCancelEdit();
     };
 
-    const handleDeletePost = (id: number) => { if (confirm("Silinsin mi?")) setBlogPosts(blogPosts.filter(p => p.id !== id)); };
+    const handleDeletePost = async (id: number) => {
+        if (!confirm("Bu yazıyı silmek istediğinize emin misiniz?")) return;
+
+        try {
+            await fetch(`${API_BASE}/blog/${id}`, { method: 'DELETE' });
+
+            // Listeden siliyoruz (Backend'den tekrar çekmeye gerek yok, hızlı olsun)
+            setBlogPosts(blogPosts.filter(p => p.id !== id));
+        } catch (error) {
+            console.error("Silme hatası:", error);
+            alert("Silinirken hata oluştu.");
+        }
+    };
 
     const toggleRelatedProduct = (prodId: number) => {
         if (postForm.relatedProductIds.includes(prodId)) setPostForm({ ...postForm, relatedProductIds: postForm.relatedProductIds.filter(id => id !== prodId) });
@@ -260,7 +315,10 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
             const dateRaw = getSafeDate(slot);
             if (!dateRaw) return groups;
 
-            const dateKey = String(dateRaw).split('T')[0]; // Sadece tarihi al (YYYY-MM-DD)
+            // --- DÜZELTME BURADA YAPILDI ---
+            // Hem "T" ile ayrılan (ISO) hem de " " ile ayrılan (SQL) tarihleri temizler.
+            const dateKey = String(dateRaw).split('T')[0].split(' ')[0];
+
             if (!groups[dateKey]) groups[dateKey] = [];
             groups[dateKey].push(slot);
             return groups;
@@ -555,8 +613,20 @@ const ExpertDashboard = ({ products, user }: { products: Product[], user: UserTy
                                 const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                                 const isSelected = selectedDate === dateStr;
                                 const isToday = new Date().toISOString().split('T')[0] === dateStr;
+
+                                // O gün dolu mu kontrol et (Nokta koymak için)
+                                const hasSlots = availableSlots.some(s => {
+                                    const raw = s.availableDate || s.AvailableDate || "";
+                                    return String(raw).split('T')[0].split(' ')[0] === dateStr;
+                                });
+
                                 return (
-                                    <button key={day} onClick={() => handleDateClick(day)} className={`h-10 rounded-lg text-sm font-bold transition flex items-center justify-center ${isSelected ? 'bg-[#A49EC2] text-white shadow-md' : 'text-gray-700 hover:bg-[#F7E9CE]'} ${isToday && !isSelected ? 'border border-[#A49EC2] text-[#A49EC2]' : ''}`}>{day}</button>
+                                    <button key={day} onClick={() => handleDateClick(day)} className={`h-10 rounded-lg text-sm font-bold transition flex flex-col items-center justify-center relative ${isSelected ? 'bg-[#A49EC2] text-white shadow-md' : 'text-gray-700 hover:bg-[#F7E9CE]'} ${isToday && !isSelected ? 'border border-[#A49EC2] text-[#A49EC2]' : ''}`}>
+                                        {day}
+                                        {/* Dolu günler için mor nokta */}
+                                        {hasSlots && !isSelected && <span className="absolute bottom-1 w-1.5 h-1.5 bg-[#A49EC2] rounded-full"></span>}
+                                        {hasSlots && isSelected && <span className="absolute bottom-1 w-1.5 h-1.5 bg-white rounded-full"></span>}
+                                    </button>
                                 );
                             })}
                         </div>
